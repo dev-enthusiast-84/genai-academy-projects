@@ -1,0 +1,13 @@
+name,category,monthly_cost,uses_per_month,renewal_date,importance,notes
+ChatGPT Plus,AI Tools,20.00,22,2026-09-20,High,Used often for learning and coding
+Canva Pro,Design,14.99,1,2026-09-11,Low,Signed up for one project
+Netflix,Entertainment,15.49,8,2026-09-18,Medium,Used mostly on weekends
+Spotify,Entertainment,10.99,25,2026-09-22,High,Used daily
+Meal Kit Trial,Food,45.00,1,2026-09-10,Low,Trial likely to renew
+Cloud Storage,Productivity,9.99,2,2026-09-28,Medium,May overlap with another storage plan
+Language App,Learning,12.99,0,2026-09-13,Low,Forgotten after first week
+Fitness App,Health,19.99,3,2026-10-02,Medium,Used occasionally
+Meditation App,Health,7.99,0,2026-09-09,Low,Trial converted last month
+News App,News,6.99,4,2026-09-26,Medium,Read a few times per month
+Photo Editor,Design,8.99,0,2026-09-16,Low,Subscribed for a resume photo edit
+Learning Platform,Learning,29.00,5,2026-10-05,High,Useful during bootcamp weeks
