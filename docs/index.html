@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GenAI Academy Projects</title>
+    <meta
+      name="description"
+      content="Project showcase for GenAI Academy work, including Subscription Reality Check."
+    >
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="GenAI Academy Projects home">GenAI Academy Projects</a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="#projects">Projects</a>
+        <a href="#week1">Week 1</a>
+        <a href="https://github.com/dev-enthusiast-84/genai-academy-projects">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">Data apps built with AI-assisted coding</p>
+          <h1 id="hero-title">A project index for GenAI Academy submissions.</h1>
+          <p class="hero-text">
+            This site lists each project with only the details available in the
+            repository or provided during the build: problem statement, explored
+            approaches, stack, repo structure, design choices, and live links.
+          </p>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="button primary" href="#projects">View projects</a>
+            <a
+              class="button secondary"
+              href="https://subscription-reality-check-bmq8rygqkxg9qffdwg2upf.streamlit.app"
+            >
+              Open Week 1 app
+            </a>
+          </div>
+        </div>
+
+        <aside class="ledger-card" aria-label="Week 1 project snapshot">
+          <div class="ledger-row">
+            <span>Week</span>
+            <strong>01</strong>
+          </div>
+          <div class="ledger-row">
+            <span>Project</span>
+            <strong>Subscription Reality Check</strong>
+          </div>
+          <div class="ledger-row">
+            <span>Main question</span>
+            <strong>What happens if I remove these subscriptions?</strong>
+          </div>
+          <div class="ledger-total">
+            <span>Live demo</span>
+            <a href="https://subscription-reality-check-bmq8rygqkxg9qffdwg2upf.streamlit.app">
+              streamlit.app
+            </a>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section" id="projects" aria-labelledby="projects-title">
+        <div class="section-heading">
+          <p class="eyebrow">Project index</p>
+          <h2 id="projects-title">Live work and submission links</h2>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Week</th>
+                <th scope="col">Project</th>
+                <th scope="col">Deployment URL</th>
+                <th scope="col">Submission docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Week 1</td>
+                <td>
+                  <a href="week1-subscription-reality-check.html">Subscription Reality Check</a>
+                </td>
+                <td>
+                  <a href="https://subscription-reality-check-bmq8rygqkxg9qffdwg2upf.streamlit.app">
+                    Live Streamlit app
+                  </a>
+                </td>
+                <td>
+                  <span class="pending">Pending Google Drive link</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="format-title">
+        <div class="section-heading">
+          <p class="eyebrow">Case study format</p>
+          <h2 id="format-title">Each project page follows the same structure.</h2>
+          <p>
+            Missing details remain marked as pending until the project has a
+            confirmed value or artifact.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Project context</h3>
+            <p>Problem statement, brainstormed approaches, and final selected direction.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Implementation</h3>
+            <p>Technology stack, repo structure, code organization, and tests.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Links</h3>
+            <p>Live deployment URL, source folder, and submission document link when available.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section project-detail" id="week1" aria-labelledby="week1-title">
+        <div class="section-heading">
+          <p class="eyebrow">Week 1</p>
+          <h2 id="week1-title">Subscription Reality Check</h2>
+          <p>
+            A Streamlit app for tracking recurring subscriptions, calculating cost per use,
+            reviewing category spend, and simulating yearly savings by removing selected subscriptions.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Personal problem</h3>
+            <p>
+              The app is based on losing track of subscriptions after signing up for
+              new tools, trials, and services.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Data workflow</h3>
+            <p>
+              It loads a CSV, validates columns, calculates spend metrics, ranks risk,
+              and exports a cancellation action plan.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Code-heavy logic</h3>
+            <p>
+              Core logic is separated into testable Python functions for scoring,
+              cost per use, category totals, and savings scenarios.
+            </p>
+          </article>
+        </div>
+
+        <div class="link-panel" aria-label="Week 1 links">
+          <a href="https://subscription-reality-check-bmq8rygqkxg9qffdwg2upf.streamlit.app">
+            Live app
+          </a>
+          <a href="week1-subscription-reality-check.html">
+            Project case study
+          </a>
+          <a href="../week1/subscription-reality-check/README.md">
+            Project README
+          </a>
+          <a href="../week1/subscription-reality-check/submission_artifacts/google_doc_draft.md">
+            Submission draft
+          </a>
+          <a href="https://github.com/dev-enthusiast-84/genai-academy-projects/tree/main/week1/subscription-reality-check">
+            Source code
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>GenAI Academy Projects</span>
+      <a href="https://github.com/dev-enthusiast-84/genai-academy-projects">View repository</a>
+    </footer>
+  </body>
+</html>
