@@ -6,7 +6,7 @@ This repository contains project work for the GenAI Academy.
 
 | Week | Project | Deployment URL | Submission Docs |
 | --- | --- | --- | --- |
-| Week 1 | [Subscription Reality Check](week1/subscription-reality-check) | TBD - add Streamlit Community Cloud URL | TBD - add Google Drive submission doc link |
+| Week 1 | [Subscription Reality Check](week1/subscription-reality-check) | [Live app](https://subscription-reality-check-bmq8rygqkxg9qffdwg2upf.streamlit.app) | TBD - add Google Drive submission doc link |
 
 ## Week 1
 
