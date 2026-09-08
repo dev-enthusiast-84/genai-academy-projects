@@ -24,7 +24,7 @@ The site will publish at:
 https://dev-enthusiast-84.github.io/genai-academy-projects/
 ```
 
-The showcase home page links to a Week 1 case study page with the problem statement, brainstormed approaches, technology stack, implemented repo structure, design choices, and live app URL. Unknown values, such as submission document links that have not been provided yet, stay marked as pending.
+The showcase home page links to the Week 1 case study route in `docs/`. The canonical Week 1 showcase page lives with the project files at `week1/subscription-reality-check/showcase.html`. Unknown values, such as submission document links that have not been provided yet, stay marked as pending.
 
 ## Week 1
 

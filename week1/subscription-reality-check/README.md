@@ -95,6 +95,7 @@ subscription_logic.py
 - `sample_subscriptions.csv`: Synthetic data used for the demo.
 - `tests/test_subscription_logic.py`: Unit tests for the main calculation behavior.
 - `runtime.txt`: Intended Python version for cloud deployment.
+- `showcase.html`: Project-owned case study page referenced from the root GitHub Pages site.
 
 ## Hands-On Coding Practice
 

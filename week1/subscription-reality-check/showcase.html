@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Week 1: Subscription Reality Check</title>
+    <meta
+      name="description"
+      content="Case study for Subscription Reality Check, a Week 1 Streamlit data app."
+    >
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html">GenAI Academy Projects</a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="index.html#projects">Projects</a>
+        <a href="https://subscription-reality-check-bmq8rygqkxg9qffdwg2upf.streamlit.app">
+          Live app
+        </a>
+        <a href="https://github.com/dev-enthusiast-84/genai-academy-projects/tree/main/week1/subscription-reality-check">
+          Source
+        </a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="case-hero">
+        <p class="eyebrow">Week 1 case study</p>
+        <h1>Subscription Reality Check</h1>
+        <p class="hero-text">
+          A Streamlit data app for understanding recurring subscription costs,
+          measuring cost per use, and testing cancellation savings scenarios.
+        </p>
+        <div class="hero-actions" aria-label="Project actions">
+          <a
+            class="button primary"
+            href="https://subscription-reality-check-bmq8rygqkxg9qffdwg2upf.streamlit.app"
+          >
+            Open live app
+          </a>
+          <a
+            class="button secondary"
+            href="https://github.com/dev-enthusiast-84/genai-academy-projects/tree/main/week1/subscription-reality-check"
+          >
+            View code
+          </a>
+        </div>
+      </section>
+
+      <section class="case-layout" aria-label="Project case study sections">
+        <aside class="case-nav">
+          <a href="#problem">Problem</a>
+          <a href="#brainstorm">Brainstorming</a>
+          <a href="#stack">Tech stack</a>
+          <a href="#structure">Repo structure</a>
+          <a href="#design">Design choices</a>
+          <a href="#links">Links</a>
+        </aside>
+
+        <div class="case-content">
+          <section class="case-section" id="problem">
+            <p class="eyebrow">Problem statement</p>
+            <h2>Losing track of recurring subscriptions and actual usage.</h2>
+            <p>
+              The project started from a personal daily-life problem: signing up
+              for new products, tools, and trials when they seem useful, then
+              forgetting to cancel subscriptions later.
+            </p>
+            <p>
+              The app answers a simple question: what happens to yearly spending
+              if selected subscriptions are removed?
+            </p>
+          </section>
+
+          <section class="case-section" id="brainstorm">
+            <p class="eyebrow">Approaches brainstormed</p>
+            <h2>From broad ideas to one focused data workflow.</h2>
+            <div class="timeline">
+              <article>
+                <span>Explored</span>
+                <p>
+                  Real-world Week 1 ideas such as fridge waste tracking,
+                  subscription tracking, time-use analysis, takeout spending,
+                  chores, and shared expenses.
+                </p>
+              </article>
+              <article>
+                <span>First direction</span>
+                <p>
+                  A shared expense splitter was considered because it had useful
+                  calculation logic, but it felt less personally relevant.
+                </p>
+              </article>
+              <article>
+                <span>Final direction</span>
+                <p>
+                  Subscription Reality Check was selected because it matched a
+                  user-provided problem: adding subscriptions when interested in
+                  a new product and later missing cancellations.
+                </p>
+              </article>
+              <article>
+                <span>Scoped workflow</span>
+                <p>
+                  The app was narrowed to monthly cost, usage, cost per use,
+                  category spending, and a savings scenario selector.
+                </p>
+              </article>
+            </div>
+          </section>
+
+          <section class="case-section" id="stack">
+            <p class="eyebrow">Technology stack</p>
+            <h2>Python data app with testable business logic.</h2>
+            <div class="tag-list">
+              <span>Python</span>
+              <span>Streamlit</span>
+              <span>Pandas</span>
+              <span>Altair</span>
+              <span>Pytest</span>
+              <span>CSV</span>
+              <span>GitHub Pages</span>
+              <span>Streamlit Community Cloud</span>
+            </div>
+            <p>
+              Streamlit powers the interactive app. Pandas handles tabular data.
+              Altair renders readable charts. Pytest validates calculation logic
+              separately from the UI.
+            </p>
+          </section>
+
+          <section class="case-section" id="structure">
+            <p class="eyebrow">Implemented repo structure</p>
+            <h2>The app is split into UI, logic, data, tests, and submission docs.</h2>
+            <pre><code>week1/subscription-reality-check/
+  app.py
+  subscription_logic.py
+  sample_subscriptions.csv
+  requirements.txt
+  runtime.txt
+  README.md
+  showcase.html
+  tests/
+    conftest.py
+    test_subscription_logic.py
+  submission_artifacts/
+    google_doc_draft.md
+    prompts_log.md
+    video_script.md
+
+docs/
+  index.html
+  week1-subscription-reality-check.html
+  styles.css</code></pre>
+          </section>
+
+          <section class="case-section" id="design">
+            <p class="eyebrow">Design choices</p>
+            <h2>A personal finance cockpit with clear actions.</h2>
+            <p>
+              The app uses a light paper-like background, dark ink text, green
+              savings accents, and coral risk highlights. These choices were
+              discussed while refining the Streamlit interface for readability.
+            </p>
+            <p>
+              During implementation, several visible UI issues were refined:
+              tab labels, button text, chart axis labels, chart background
+              contrast, and generic chart toolbars. The final interface keeps
+              explicit user actions such as downloading current data and exporting
+              a cancellation action plan.
+            </p>
+          </section>
+
+          <section class="case-section" id="links">
+            <p class="eyebrow">Live links</p>
+            <h2>Project resources</h2>
+            <div class="resource-list">
+              <a href="https://subscription-reality-check-bmq8rygqkxg9qffdwg2upf.streamlit.app">
+                Live Streamlit app
+              </a>
+              <a href="https://github.com/dev-enthusiast-84/genai-academy-projects/tree/main/week1/subscription-reality-check">
+                Code repository folder
+              </a>
+              <a href="../week1/subscription-reality-check/submission_artifacts/google_doc_draft.md">
+                Local submission draft
+              </a>
+              <span class="pending">Google Drive submission doc link pending</span>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Week 1: Subscription Reality Check</span>
+      <a href="index.html">Back to project index</a>
+    </footer>
+  </body>
+</html>
