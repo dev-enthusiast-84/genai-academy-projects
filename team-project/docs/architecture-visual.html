@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content Strategist - Visual Architecture</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #2563eb;
+      --secondary: #7c3aed;
+      --success: #059669;
+      --warning: #d97706;
+      --bg-light: #f8fafc;
+      --bg-dark: #1e293b;
+      --text-dark: #0f172a;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-light: #1e293b;
+        --bg-dark: #0f172a;
+        --text-dark: #f1f5f9;
+        --text-light: #cbd5e1;
+        --border: #334155;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: var(--text-dark);
+      background: var(--bg-light);
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--text-light);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      color: var(--primary);
+      margin: 2rem 0 1rem 0;
+      border-bottom: 2px solid var(--secondary);
+      padding-bottom: 0.5rem;
+    }
+
+    .visual-section {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .visual-section {
+        background: #1e293b;
+      }
+    }
+
+    .diagram {
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 2rem;
+      margin: 1.5rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+      line-height: 1.5;
+      color: #334155;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .diagram {
+        background: #0f172a;
+        color: #cbd5e1;
+      }
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .box {
+      padding: 1.5rem;
+      border-radius: 8px;
+      background: var(--bg-light);
+    }
+
+    .box h4 {
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+      color: var(--secondary);
+    }
+
+    .box p {
+      color: var(--text-light);
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .stack-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .stack-item {
+      background: white;
+      border-left: 4px solid var(--primary);
+      padding: 1rem;
+      border-radius: 6px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .stack-item {
+        background: #0f172a;
+      }
+    }
+
+    .stack-item strong {
+      display: block;
+      color: var(--primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .stack-item small {
+      color: var(--text-light);
+      font-size: 0.85rem;
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+
+    .flow-step {
+      background: white;
+      padding: 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      text-align: center;
+      min-width: 120px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .flow-step {
+        background: #0f172a;
+      }
+    }
+
+    .flow-step.primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .flow-step.secondary {
+      background: var(--secondary);
+      color: white;
+      border-color: var(--secondary);
+    }
+
+    .arrow {
+      font-size: 1.5rem;
+      color: var(--primary);
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+
+    .badge.success {
+      background: var(--success);
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    @media (max-width: 900px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .comparison-item {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .comparison-item {
+        background: #0f172a;
+      }
+    }
+
+    .comparison-item h4 {
+      color: var(--primary);
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+    }
+
+    .comparison-item ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .comparison-item li {
+      padding: 0.5rem 0;
+      color: var(--text-light);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-item li:last-child {
+      border-bottom: none;
+    }
+
+    .comparison-item li::before {
+      content: "✓ ";
+      color: var(--success);
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏗️ Content Strategist MVP</h1>
+      <p class="subtitle">Visual Technical Architecture - AI-Driven Content Strategy Platform</p>
+      <div class="nav-links">
+        <a href="./index.html">📖 Docs Hub</a>
+        <a href="./architecture.html">📋 Full Document</a>
+        <a href="#">🖼️ This Visual Guide</a>
+      </div>
+    </header>
+
+    <!-- WHAT IT DOES -->
+    <div class="visual-section">
+      <h2>🎯 What It Does</h2>
+      <div class="grid-2">
+        <div class="box">
+          <h4>📝 Input Content</h4>
+          <p>User pastes webinar notes, blog outline, or content idea</p>
+        </div>
+        <div class="box">
+          <h4>🤖 AI Analysis</h4>
+          <p>3 agents work together: Strategist → Creator → Reviewer</p>
+        </div>
+        <div class="box">
+          <h4>✍️ Generate Drafts</h4>
+          <p>Create platform-optimized content variants in user's voice</p>
+        </div>
+        <div class="box">
+          <h4>👤 User Approval</h4>
+          <p>Human-in-the-loop gates ensure quality and alignment</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARCHITECTURE LAYERS -->
+    <div class="visual-section">
+      <h2>🏗️ System Architecture</h2>
+      <div class="diagram">
+┌────────────────────────────────────────────────────────────────┐
+│                      USER INTERFACE                            │
+│                    (Next.js + Vercel)                          │
+│        Input Form → Recommendations → Draft Editor             │
+└──────────────────────┬─────────────────────────────────────────┘
+                       │ HTTP/REST API
+┌──────────────────────▼─────────────────────────────────────────┐
+│                   ORCHESTRATION LAYER                          │
+│                    (LangGraph State Machine)                   │
+│    Input → Strategist → Gate 1 → Creator → Reviewer → Gate 2   │
+└───┬────────────────────────────────────────┬────────────────────┘
+    │                                        │
+    ▼                                        ▼
+┌──────────────────────────┐    ┌──────────────────────────────┐
+│    SEMANTIC SEARCH       │    │    LLM INTEGRATION LAYER     │
+│    (Pinecone Vector DB)  │    │   (LiteLLM Abstraction)      │
+│                          │    │                              │
+│ • Find similar posts     │    │ • Claude (primary)           │
+│ • Top-K similarity       │    │ • GPT-4 (fallback)           │
+│ • Metadata filtering     │    │ • Automatic fallover         │
+└──────────────────────────┘    └──────────────────────────────┘
+            ▲                               │
+            │                               │
+    ┌───────┴───────────────────────────────┴────────┐
+    │        OBSERVABILITY & MONITORING              │
+    │  LangSmith • Sentry • PostHog                  │
+    └──────────────────────────────────────────────────┘
+            ▲
+            │
+┌───────────┴──────────────────────────────────────────┐
+│              DATA LAYER                              │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │  PostgreSQL (Supabase)                          │ │
+│  │  • Content posts, metrics, decisions, voice    │ │
+│  │  • Structured queries, ACID compliance         │ │
+│  └─────────────────────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │  Redis (Optional Cache)                         │ │
+│  │  • Session state, recent recommendations       │ │
+│  └─────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────┘
+      </div>
+    </div>
+
+    <!-- WORKFLOW VISUALIZATION -->
+    <div class="visual-section">
+      <h2>📊 User Workflow: Input → Approval → Draft</h2>
+      <div class="flow">
+        <div class="flow-step primary">📝 Input Content</div>
+        <div class="arrow">→</div>
+        <div class="flow-step primary">🤖 Strategist</div>
+        <div class="arrow">→</div>
+        <div class="flow-step secondary">🚪 Gate 1: Strategy Approval</div>
+      </div>
+      <div class="flow">
+        <div class="flow-step secondary">✍️ Creator Agent</div>
+        <div class="arrow">→</div>
+        <div class="flow-step primary">🔍 Reviewer Agent</div>
+        <div class="arrow">→</div>
+        <div class="flow-step secondary">🚪 Gate 2: Final Review</div>
+      </div>
+      <div class="flow">
+        <div class="flow-step primary">✅ Approved Draft</div>
+        <div class="arrow">→</div>
+        <div class="flow-step success">🎉 Ready to Publish</div>
+      </div>
+    </div>
+
+    <!-- TECH STACK -->
+    <div class="visual-section">
+      <h2>💻 Technology Stack</h2>
+      <div class="grid-2">
+        <div>
+          <h3 style="color: var(--secondary); font-size: 1.1rem; margin-bottom: 1rem;">Backend</h3>
+          <div class="stack-list">
+            <div class="stack-item">
+              <strong>FastAPI</strong>
+              <small>Web framework</small>
+            </div>
+            <div class="stack-item">
+              <strong>LangGraph</strong>
+              <small>Orchestration</small>
+            </div>
+            <div class="stack-item">
+              <strong>LiteLLM</strong>
+              <small>LLM abstraction</small>
+            </div>
+            <div class="stack-item">
+              <strong>Python 3.11</strong>
+              <small>Runtime</small>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 style="color: var(--secondary); font-size: 1.1rem; margin-bottom: 1rem;">Data & Storage</h3>
+          <div class="stack-list">
+            <div class="stack-item">
+              <strong>PostgreSQL</strong>
+              <small>Structured data</small>
+            </div>
+            <div class="stack-item">
+              <strong>Pinecone</strong>
+              <small>Vector search</small>
+            </div>
+            <div class="stack-item">
+              <strong>Supabase</strong>
+              <small>Managed DB</small>
+            </div>
+            <div class="stack-item">
+              <strong>Redis</strong>
+              <small>Caching</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div>
+          <h3 style="color: var(--secondary); font-size: 1.1rem; margin-bottom: 1rem;">Frontend</h3>
+          <div class="stack-list">
+            <div class="stack-item">
+              <strong>Next.js</strong>
+              <small>React framework</small>
+            </div>
+            <div class="stack-item">
+              <strong>TypeScript</strong>
+              <small>Type safety</small>
+            </div>
+            <div class="stack-item">
+              <strong>React Query</strong>
+              <small>State management</small>
+            </div>
+            <div class="stack-item">
+              <strong>TailwindCSS</strong>
+              <small>Styling</small>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 style="color: var(--secondary); font-size: 1.1rem; margin-bottom: 1rem;">Deployment & Observability</h3>
+          <div class="stack-list">
+            <div class="stack-item">
+              <strong>Vercel</strong>
+              <small>Frontend hosting</small>
+            </div>
+            <div class="stack-item">
+              <strong>Replit</strong>
+              <small>Backend hosting</small>
+            </div>
+            <div class="stack-item">
+              <strong>LangSmith</strong>
+              <small>Tracing</small>
+            </div>
+            <div class="stack-item">
+              <strong>Sentry</strong>
+              <small>Error tracking</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENTS -->
+    <div class="visual-section">
+      <h2>🤖 Three-Agent System</h2>
+      <div class="comparison-grid">
+        <div class="comparison-item">
+          <h4>Strategist Agent</h4>
+          <ul>
+            <li>Analyzes new content</li>
+            <li>Searches similar posts</li>
+            <li>Identifies patterns</li>
+            <li>Recommends action</li>
+            <li>Provides confidence score</li>
+          </ul>
+        </div>
+        <div class="comparison-item">
+          <h4>Creator Agent</h4>
+          <ul>
+            <li>Generates draft content</li>
+            <li>Uses voice samples</li>
+            <li>Platform-optimized</li>
+            <li>Style consistent</li>
+            <li>Maintains user voice</li>
+          </ul>
+        </div>
+        <div class="comparison-item">
+          <h4>Reviewer Agent</h4>
+          <ul>
+            <li>Quality scores draft</li>
+            <li>Checks tone & clarity</li>
+            <li>Detects generic phrases</li>
+            <li>Suggests improvements</li>
+            <li>Validates brand fit</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MVP vs FUTURE -->
+    <div class="visual-section">
+      <h2>🚀 MVP Scope vs Future Roadmap</h2>
+      <div class="grid-2">
+        <div>
+          <h3 style="color: var(--success); font-size: 1.1rem; margin-bottom: 1rem;">✅ MVP (Days 1-3)</h3>
+          <div class="comparison-item">
+            <span class="badge success">READY NOW</span>
+            <ul style="margin-top: 0.75rem;">
+              <li>3-agent orchestration</li>
+              <li>Golden dataset (15 posts)</li>
+              <li>Text-only input</li>
+              <li>Human approval gates</li>
+              <li>Full observability</li>
+              <li>Cloud deployment</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <h3 style="color: var(--warning); font-size: 1.1rem; margin-bottom: 1rem;">🔮 Phase 2+ (Future)</h3>
+          <div class="comparison-item">
+            <span class="badge" style="background: var(--warning);">ROADMAP</span>
+            <ul style="margin-top: 0.75rem;">
+              <li>LinkedIn API integration</li>
+              <li>PDF/DOCX file support</li>
+              <li>Auto voice extraction</li>
+              <li>Real-time performance tracking</li>
+              <li>Async job queue (Celery)</li>
+              <li>Multi-user workspaces</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATA FLOW -->
+    <div class="visual-section">
+      <h2>💾 Data Flow: Semantic Search Example</h2>
+      <div class="diagram">
+User content: "AI in product development"
+        ↓
+[1] Generate embedding (OpenAI API)
+        ↓ → 1536-dimensional vector
+[2] Query Pinecone
+        ↓ → Top 5 similar posts (cosine similarity)
+[3] Fetch metrics from PostgreSQL
+        ↓ → impressions, reactions, engagement rates
+[4] Identify patterns
+        ↓ → "Deep-dives avg 14% engagement"
+[5] LLM processes patterns + context
+        ↓
+Strategist Recommendation: "Repurpose as LinkedIn thread"
+      </div>
+    </div>
+
+    <!-- DEPLOYMENT -->
+    <div class="visual-section">
+      <h2>🌐 Deployment Architecture</h2>
+      <div class="diagram">
+┌─────────────────────────────────────────────────────────┐
+│                   CLOUD DEPLOYMENT (MVP)                │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌──────────────────┐         ┌──────────────────┐     │
+│  │ VERCEL (Frontend)│         │ REPLIT (Backend) │     │
+│  │                  │         │                  │     │
+│  │ Next.js App      │        │ FastAPI Server   │     │
+│  │ Auto-deployed    │        │ Auto-scaled      │     │
+│  └────────┬─────────┘         └────────┬─────────┘     │
+│           │ HTTP REST API             │               │
+│           └─────────────┬─────────────┘               │
+│                         │                             │
+│          ┌──────────────┼──────────────┐             │
+│          │              │              │              │
+│          ▼              ▼              ▼              │
+│      ┌─────────┐  ┌──────────┐  ┌─────────┐         │
+│      │Supabase │  │ Pinecone │  │ Redis   │         │
+│      │  (DB)   │  │(Vector)  │  │(Cache)  │         │
+│      └─────────┘  └──────────┘  └─────────┘         │
+│                                                       │
+└────────────────────────────────────────────────────────┘
+      </div>
+    </div>
+
+    <!-- QUICK START -->
+    <div class="visual-section">
+      <h2>⚡ Quick Start</h2>
+      <div class="flow">
+        <div class="flow-step primary">make init</div>
+        <div class="arrow">→</div>
+        <div class="flow-step primary">make dev</div>
+        <div class="arrow">→</div>
+        <div class="flow-step primary">make db-seed</div>
+        <div class="arrow">→</div>
+        <div class="flow-step success">Ready!</div>
+      </div>
+      <p style="margin-top: 1.5rem; text-align: center; color: var(--text-light);">
+        One command to set up everything (configuration, backend, frontend, database)
+      </p>
+    </div>
+
+    <footer>
+      <p>Visual Architecture Guide | Full documentation: docs/architecture.html</p>
+      <p style="margin-top: 0.5rem;">Production-ready system designed for 2-3 day MVP delivery</p>
+    </footer>
+  </div>
+</body>
+</html>
