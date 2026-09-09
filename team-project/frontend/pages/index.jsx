@@ -89,6 +89,19 @@ export default function Home() {
     }
   };
 
+  const handleCopyDraft = async () => {
+    if (!draft) return;
+
+    const textToCopy = `${draft.title}\n\n${draft.body}`;
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      alert('✅ Draft copied to clipboard! Paste in LinkedIn now.');
+    } catch (err) {
+      alert('Failed to copy. Please manually copy the text.');
+    }
+  };
+
   const handleReset = () => {
     setStep(1);
     setContent('');
@@ -243,11 +256,26 @@ export default function Home() {
               <p>• Tone: {review.tone_score?.toFixed(1) || 'Good'}/10</p>
               <p>• Clarity: {review.clarity_score?.toFixed(1) || 'Good'}/10</p>
             </div>
+            <div style={{
+              background: '#fffbea',
+              padding: '12px',
+              borderRadius: '6px',
+              marginBottom: '16px',
+              border: '1px solid #ffc107'
+            }}>
+              <p style={{ fontSize: '12px', color: '#856404', marginBottom: '8px' }}>
+                📅 <strong>Phase 2 (LinkedIn API Integration):</strong> Direct publishing coming soon!
+              </p>
+              <p style={{ fontSize: '12px', color: '#666' }}>
+                For now, copy your draft and manually paste into LinkedIn.
+              </p>
+            </div>
             <div className="button-group">
               <button
                 className="button button-success"
+                onClick={handleCopyDraft}
               >
-                ✓ Publish
+                📋 Copy Draft to Clipboard
               </button>
               <button
                 className="button button-secondary"
