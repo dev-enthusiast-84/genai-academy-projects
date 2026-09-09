@@ -35,7 +35,6 @@ export default function Home() {
       setStep(2);
     } catch (err) {
       setError(err.message || 'Analysis failed');
-      console.error('Error:', err);
     } finally {
       setLoading(false);
     }
@@ -116,64 +115,73 @@ export default function Home() {
 
   const getActionBadgeColor = (action) => {
     const colors = {
-      publish: '#059669',
-      repurpose: '#0066cc',
-      rework: '#d97706',
-      combine: '#7c3aed',
-      skip: '#6b7280',
+      publish: 'bg-green-600 text-white',
+      repurpose: 'bg-blue-600 text-white',
+      rework: 'bg-amber-600 text-white',
+      combine: 'bg-purple-600 text-white',
+      skip: 'bg-gray-600 text-white',
     };
-    return colors[action?.toLowerCase()] || '#6b7280';
+    return colors[action?.toLowerCase()] || 'bg-gray-600 text-white';
   };
 
   const renderStarRating = (score) => {
-    const stars = Math.round(score / 2); // Convert 0-10 to 0-5
+    const stars = Math.round(score / 2);
     return '★'.repeat(stars) + '☆'.repeat(5 - stars);
   };
 
   return (
-    <main className="container" role="main">
-      <div className="page">
+    <main className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-50" role="main">
+      <div className="max-w-2xl mx-auto px-6 py-8">
         {/* Header */}
-        <header style={{ marginBottom: '48px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '32px' }}>✨</span>
-            <h1>Content Strategist</h1>
+        <header className="mb-12">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-3xl">✨</span>
+            <h1 className="text-3xl font-bold">Content Strategist</h1>
           </div>
-          <p className="subtitle">AI-powered content analysis, strategy, and generation</p>
+          <p className="text-gray-600 dark:text-gray-400 text-base">
+            AI-powered content analysis, strategy, and generation
+          </p>
         </header>
 
         {/* Progress Indicator */}
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
-            <div>
-              <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>
-                Step {step} of 4
-              </span>
-            </div>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-primary)' }}>
+        <div className="mb-8">
+          <div className="flex justify-between items-baseline mb-3">
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+              Step {step} of 4
+            </span>
+            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
               {['Input Content', 'Strategy Review', 'Draft Created', 'Quality Check'][step - 1]}
             </span>
           </div>
-          <div className="progress" role="progressbar" aria-valuenow={step} aria-valuemin="1" aria-valuemax="4">
-            <div className="progress-bar" style={{ width: `${(step / 4) * 100}%` }} />
+          <div
+            className="progress-bar"
+            role="progressbar"
+            aria-valuenow={step}
+            aria-valuemin="1"
+            aria-valuemax="4"
+          >
+            <div
+              className="progress-bar-fill"
+              style={{ width: `${(step / 4) * 100}%` }}
+            />
           </div>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="alert alert-error" role="alert">
+          <div className="alert-error" role="alert">
             <strong>⚠️ {error}</strong>
           </div>
         )}
 
         {/* Step 1: Input */}
         {step === 1 && (
-          <div className="card">
-            <h2>Step 1: Input Your Content</h2>
-            <p style={{ marginBottom: '16px', color: 'var(--text-secondary)' }}>
+          <div className="card animate-fadeIn">
+            <h2 className="text-xl font-semibold mb-3">Step 1: Input Your Content</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               Paste your blog post, article outline, webinar notes, or any content idea
             </p>
-            <label htmlFor="content-input" style={{ display: 'block', fontWeight: '500', marginBottom: '8px' }}>
+            <label htmlFor="content-input" className="block font-medium mb-2 text-sm">
               Content
             </label>
             <textarea
@@ -183,10 +191,11 @@ export default function Home() {
               placeholder="Enter your content here... (minimum 10 characters)"
               disabled={loading}
               aria-label="Content to analyze"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg font-base text-gray-900 dark:text-gray-50 mb-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:opacity-50 disabled:cursor-not-allowed min-h-40"
             />
-            <div className="button-group">
+            <div className="flex gap-3 flex-wrap">
               <button
-                className="button button-primary"
+                className="btn-primary"
                 onClick={handleAnalyze}
                 disabled={loading || !content.trim()}
                 aria-busy={loading}
@@ -206,57 +215,43 @@ export default function Home() {
 
         {/* Step 2: Recommendation */}
         {step >= 2 && recommendation && (
-          <div className="card">
-            <h2>Step 2: Strategy Recommendation</h2>
+          <div className="card animate-fadeIn">
+            <h2 className="text-xl font-semibold mb-6">Step 2: Strategy Recommendation</h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-              <div>
-                <p style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase">
                   Recommended Action
                 </p>
-                <div style={{
-                  display: 'inline-block',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  background: getActionBadgeColor(recommendation.action),
-                  color: 'white',
-                  fontWeight: '600',
-                  fontSize: '14px',
-                }}>
+                <div className={`inline-block px-3 py-2 rounded-lg ${getActionBadgeColor(recommendation.action)} font-semibold text-sm`}>
                   {recommendation.action?.toUpperCase()}
                 </div>
               </div>
 
-              <div>
-                <p style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                  Confidence Level
+              <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase">
+                  Confidence
                 </p>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--color-primary)' }}>
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
                   {(recommendation.confidence * 100).toFixed(0)}%
                 </div>
               </div>
             </div>
 
-            <div style={{
-              background: 'var(--bg-secondary)',
-              padding: '16px',
-              borderRadius: '8px',
-              marginBottom: '24px',
-              borderLeft: `4px solid ${getActionBadgeColor(recommendation.action)}`,
-            }}>
-              <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
+            <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg border-l-4 border-blue-600 mb-6">
+              <p className="text-sm leading-relaxed text-gray-900 dark:text-gray-50">
                 {recommendation.reasoning}
               </p>
             </div>
 
             {recommendation.recommendations?.length > 0 && (
-              <div style={{ marginBottom: '24px' }}>
-                <p style={{ fontSize: '13px', fontWeight: '600', marginBottom: '12px', color: 'var(--text-secondary)' }}>
+              <div className="mb-6">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase">
                   Key Recommendations
                 </p>
-                <ul style={{ listStyle: 'none' }}>
+                <ul className="list-none">
                   {recommendation.recommendations.map((rec, i) => (
-                    <li key={i} style={{ padding: '8px 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                    <li key={i} className="py-2 text-sm text-gray-700 dark:text-gray-300">
                       ✓ {rec}
                     </li>
                   ))}
@@ -265,9 +260,9 @@ export default function Home() {
             )}
 
             {step === 2 && (
-              <div className="button-group">
+              <div className="flex gap-3 flex-wrap">
                 <button
-                  className="button button-primary"
+                  className="btn-primary"
                   onClick={handleCreateDraft}
                   disabled={loading}
                   aria-busy={loading}
@@ -282,7 +277,7 @@ export default function Home() {
                   )}
                 </button>
                 <button
-                  className="button button-secondary"
+                  className="btn-secondary"
                   onClick={handleReset}
                   disabled={loading}
                 >
@@ -295,32 +290,28 @@ export default function Home() {
 
         {/* Step 3: Draft */}
         {step >= 3 && draft && !draft.error && (
-          <div className="card">
-            <h2>Step 3: Generated Draft</h2>
+          <div className="card animate-fadeIn">
+            <h2 className="text-xl font-semibold mb-4">Step 3: Generated Draft</h2>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '20px' }}>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+            <div className="flex justify-between items-baseline mb-5">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
                 📊 {draft.word_count || 0} words • {draft.reading_time || '—'}
               </p>
             </div>
 
-            <div style={{
-              background: 'var(--bg-secondary)',
-              padding: '24px',
-              borderRadius: '12px',
-              marginBottom: '24px',
-              borderLeft: '4px solid var(--color-primary)',
-            }}>
-              <h3 style={{ marginBottom: '16px', color: 'var(--text-primary)' }}>{draft.title}</h3>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
+            <div className="bg-gray-100 dark:bg-slate-800 p-6 rounded-lg border-l-4 border-blue-600 mb-6">
+              <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-50">
+                {draft.title}
+              </h3>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 dark:text-gray-200">
                 {draft.body}
               </p>
             </div>
 
             {step === 3 && (
-              <div className="button-group">
+              <div className="flex gap-3 flex-wrap">
                 <button
-                  className="button button-primary"
+                  className="btn-primary"
                   onClick={handleReview}
                   disabled={loading}
                   aria-busy={loading}
@@ -335,7 +326,7 @@ export default function Home() {
                   )}
                 </button>
                 <button
-                  className="button button-secondary"
+                  className="btn-secondary"
                   onClick={handleReset}
                   disabled={loading}
                 >
@@ -348,66 +339,57 @@ export default function Home() {
 
         {/* Step 4: Quality Assessment */}
         {step >= 4 && review && !review.error && (
-          <div className="card">
-            <h2>Step 4: Quality Assessment</h2>
+          <div className="card animate-fadeIn">
+            <h2 className="text-xl font-semibold mb-6">Step 4: Quality Assessment</h2>
 
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '20px',
-              marginBottom: '28px',
-            }}>
-              <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase">
                   Overall Score
                 </p>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: 'var(--color-success)' }}>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                   {review.quality_score?.toFixed(1) || '8.5'}/10
                 </div>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                   {renderStarRating(review.quality_score)}
                 </p>
               </div>
 
-              <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+              <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase">
                   Verdict
                 </p>
-                <div style={{
-                  fontSize: '18px',
-                  fontWeight: '700',
-                  color: review.overall_verdict === 'APPROVE' ? 'var(--color-success)' : 'var(--color-warning)',
-                }}>
+                <div className={`text-lg font-bold ${review.overall_verdict === 'APPROVE' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
                   {review.overall_verdict === 'APPROVE' ? '✅ Approved' : '⚠️ Revise'}
                 </div>
               </div>
 
-              <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+              <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase">
                   Tone & Clarity
                 </p>
-                <p style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
+                <p className="text-sm text-gray-900 dark:text-gray-50">
                   {review.tone_score?.toFixed(1)}/10 • {review.clarity_score?.toFixed(1)}/10
                 </p>
               </div>
             </div>
 
-            <div className="alert alert-warning" style={{ marginBottom: '24px' }}>
-              <p style={{ margin: 0, fontSize: '13px' }}>
+            <div className="alert-warning mb-6">
+              <p className="text-sm m-0">
                 <strong>📅 Phase 2:</strong> Direct LinkedIn publishing coming soon! For now, copy your draft and paste manually.
               </p>
             </div>
 
-            <div className="button-group">
+            <div className="flex gap-3 flex-wrap">
               <button
-                className="button button-success"
+                className="btn-success"
                 onClick={handleCopyDraft}
                 title="Copy draft to clipboard"
               >
                 {copied ? '✓ Copied!' : '📋 Copy Draft'}
               </button>
               <button
-                className="button button-secondary"
+                className="btn-secondary"
                 onClick={handleReset}
               >
                 ↻ New Content
@@ -417,16 +399,9 @@ export default function Home() {
         )}
 
         {/* Footer */}
-        <footer style={{
-          marginTop: '48px',
-          paddingTop: '24px',
-          borderTop: '1px solid var(--border-color)',
-          fontSize: '12px',
-          color: 'var(--text-tertiary)',
-          textAlign: 'center',
-        }}>
+        <footer className="mt-16 pt-6 border-t border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-500 text-center">
           <p>🔌 Backend: {apiUrl}</p>
-          <p style={{ marginTop: '8px' }}>
+          <p className="mt-2">
             Enterprise-grade design • WCAG AA accessible • Dark mode enabled
           </p>
         </footer>
