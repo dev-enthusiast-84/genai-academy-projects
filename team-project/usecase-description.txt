@@ -1,0 +1,2 @@
+Personal brand content repurposer with performance memory
+Agents: Content Ingest → Performance Memory (what formats/topics did well historically) → Repurpose Planner (turn a LinkedIn post into a newsletter, thread, etc.) → Voice-Consistency Checker. Golden set: use your own LinkedIn post history (you mentioned drafting one recently) - you already have engagement numbers as an objective label.

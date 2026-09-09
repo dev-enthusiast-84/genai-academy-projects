@@ -1,0 +1,72 @@
+[
+  {
+    "id": "direct_streamlit",
+    "job_file": "job_ai_product_builder.md",
+    "requirement_contains": "Streamlit",
+    "expected_status": "Supported",
+    "expected_source_ids": ["candidate_resume", "project_subscription_reality_check"]
+  },
+  {
+    "id": "direct_python_tests",
+    "job_file": "job_platform_ml_engineer.md",
+    "requirement_contains": "Python services with tests",
+    "expected_status": "Partially supported",
+    "expected_source_ids": ["candidate_resume", "project_subscription_reality_check"]
+  },
+  {
+    "id": "direct_docs",
+    "job_file": "job_ai_product_builder.md",
+    "requirement_contains": "README",
+    "expected_status": "Supported",
+    "expected_source_ids": ["candidate_resume", "project_subscription_reality_check"]
+  },
+  {
+    "id": "unsupported_kubernetes",
+    "job_file": "job_platform_ml_engineer.md",
+    "requirement_contains": "Kubernetes",
+    "expected_status": "No evidence found",
+    "expected_source_ids": []
+  },
+  {
+    "id": "unsupported_terraform",
+    "job_file": "job_platform_ml_engineer.md",
+    "requirement_contains": "Terraform",
+    "expected_status": "No evidence found",
+    "expected_source_ids": []
+  },
+  {
+    "id": "partial_deploy",
+    "job_file": "job_ai_product_builder.md",
+    "requirement_contains": "Deploy prototypes",
+    "expected_status": "Partially supported",
+    "expected_source_ids": ["candidate_resume", "project_subscription_reality_check"]
+  },
+  {
+    "id": "direct_limitations",
+    "job_file": "job_ai_product_builder.md",
+    "requirement_contains": "limitations",
+    "expected_status": "Supported",
+    "expected_source_ids": ["project_prompt_log"]
+  },
+  {
+    "id": "direct_rag_eval",
+    "job_file": "job_rag_evaluation_assistant.md",
+    "requirement_contains": "faithfulness",
+    "expected_status": "Partially supported",
+    "expected_source_ids": ["project_prompt_log"]
+  },
+  {
+    "id": "unsupported_security",
+    "job_file": "job_platform_ml_engineer.md",
+    "requirement_contains": "security",
+    "expected_status": "No evidence found",
+    "expected_source_ids": []
+  },
+  {
+    "id": "direct_citations_ui",
+    "job_file": "job_rag_evaluation_assistant.md",
+    "requirement_contains": "citations",
+    "expected_status": "Partially supported",
+    "expected_source_ids": ["candidate_resume"]
+  }
+]

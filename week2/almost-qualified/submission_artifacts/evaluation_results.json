@@ -1,0 +1,148 @@
+{
+  "corpus": "demo",
+  "passed": 10,
+  "total": 10,
+  "results": [
+    {
+      "id": "direct_streamlit",
+      "expected_status": "Supported",
+      "actual_status": "Supported",
+      "expected_source_ids": [
+        "candidate_resume",
+        "project_subscription_reality_check"
+      ],
+      "actual_source_ids": [
+        "candidate_resume",
+        "project_subscription_reality_check"
+      ],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    },
+    {
+      "id": "direct_python_tests",
+      "expected_status": "Partially supported",
+      "actual_status": "Partially supported",
+      "expected_source_ids": [
+        "candidate_resume",
+        "project_subscription_reality_check"
+      ],
+      "actual_source_ids": [
+        "candidate_resume",
+        "project_prompt_log",
+        "project_subscription_reality_check"
+      ],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    },
+    {
+      "id": "direct_docs",
+      "expected_status": "Supported",
+      "actual_status": "Supported",
+      "expected_source_ids": [
+        "candidate_resume",
+        "project_subscription_reality_check"
+      ],
+      "actual_source_ids": [
+        "candidate_resume",
+        "project_subscription_reality_check"
+      ],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    },
+    {
+      "id": "unsupported_kubernetes",
+      "expected_status": "No evidence found",
+      "actual_status": "No evidence found",
+      "expected_source_ids": [],
+      "actual_source_ids": [],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    },
+    {
+      "id": "unsupported_terraform",
+      "expected_status": "No evidence found",
+      "actual_status": "No evidence found",
+      "expected_source_ids": [],
+      "actual_source_ids": [],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    },
+    {
+      "id": "partial_deploy",
+      "expected_status": "Partially supported",
+      "actual_status": "Partially supported",
+      "expected_source_ids": [
+        "candidate_resume",
+        "project_subscription_reality_check"
+      ],
+      "actual_source_ids": [
+        "candidate_resume",
+        "project_subscription_reality_check"
+      ],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    },
+    {
+      "id": "direct_limitations",
+      "expected_status": "Supported",
+      "actual_status": "Supported",
+      "expected_source_ids": [
+        "project_prompt_log"
+      ],
+      "actual_source_ids": [
+        "project_prompt_log",
+        "project_subscription_reality_check"
+      ],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    },
+    {
+      "id": "direct_rag_eval",
+      "expected_status": "Partially supported",
+      "actual_status": "Partially supported",
+      "expected_source_ids": [
+        "project_prompt_log"
+      ],
+      "actual_source_ids": [
+        "candidate_resume",
+        "project_prompt_log",
+        "project_subscription_reality_check"
+      ],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    },
+    {
+      "id": "unsupported_security",
+      "expected_status": "No evidence found",
+      "actual_status": "No evidence found",
+      "expected_source_ids": [],
+      "actual_source_ids": [],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    },
+    {
+      "id": "direct_citations_ui",
+      "expected_status": "Partially supported",
+      "actual_status": "Partially supported",
+      "expected_source_ids": [
+        "candidate_resume"
+      ],
+      "actual_source_ids": [
+        "candidate_resume",
+        "project_subscription_reality_check"
+      ],
+      "status_ok": true,
+      "source_ok": true,
+      "errors": []
+    }
+  ]
+}

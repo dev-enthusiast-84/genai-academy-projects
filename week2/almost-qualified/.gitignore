@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
+data/personal/
+data/*manifest.personal.json
+submission_artifacts/evaluation_results.personal.json

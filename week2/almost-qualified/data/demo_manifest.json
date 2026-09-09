@@ -1,0 +1,263 @@
+{
+  "corpus_version": "3e367eb6f9cc",
+  "documents": [
+    {
+      "source_id": "candidate_resume",
+      "source_title": "Candidate resume: Anika Rao",
+      "category": "candidate",
+      "path": "/Users/maneettaantony/Workspaces/genai-academy-projects/week2/almost-qualified/data/demo/candidate_resume.md"
+    },
+    {
+      "source_id": "job_ai_product_builder",
+      "source_title": "Job description: AI Product Builder Intern",
+      "category": "job",
+      "path": "/Users/maneettaantony/Workspaces/genai-academy-projects/week2/almost-qualified/data/demo/job_ai_product_builder.md"
+    },
+    {
+      "source_id": "job_platform_ml_engineer",
+      "source_title": "Job description: Platform ML Engineer",
+      "category": "job",
+      "path": "/Users/maneettaantony/Workspaces/genai-academy-projects/week2/almost-qualified/data/demo/job_platform_ml_engineer.md"
+    },
+    {
+      "source_id": "job_rag_evaluation_assistant",
+      "source_title": "Job description: RAG Evaluation Assistant",
+      "category": "job",
+      "path": "/Users/maneettaantony/Workspaces/genai-academy-projects/week2/almost-qualified/data/demo/job_rag_evaluation_assistant.md"
+    },
+    {
+      "source_id": "project_prompt_log",
+      "source_title": "Project artifact: Prompt and iteration log",
+      "category": "candidate",
+      "path": "/Users/maneettaantony/Workspaces/genai-academy-projects/week2/almost-qualified/data/demo/project_prompt_log.md"
+    },
+    {
+      "source_id": "project_subscription_reality_check",
+      "source_title": "Project write-up: Subscription Reality Check",
+      "category": "candidate",
+      "path": "/Users/maneettaantony/Workspaces/genai-academy-projects/week2/almost-qualified/data/demo/project_subscription_reality_check.md"
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": "candidate_resume:001",
+      "source_id": "candidate_resume",
+      "source_title": "Candidate resume: Anika Rao",
+      "category": "candidate",
+      "section": "Candidate resume: Anika Rao",
+      "line_start": 1,
+      "line_end": 4,
+      "text": "# Candidate resume: Anika Rao\nDocument category: candidate",
+      "content_hash": "d42aa5b1b40e"
+    },
+    {
+      "chunk_id": "candidate_resume:002",
+      "source_id": "candidate_resume",
+      "source_title": "Candidate resume: Anika Rao",
+      "category": "candidate",
+      "section": "Summary",
+      "line_start": 5,
+      "line_end": 8,
+      "text": "## Summary\nCareer changer moving from operations analytics into AI product engineering. Built Streamlit data apps, designed evaluation tables, and documented decisions for reproducible class projects.",
+      "content_hash": "c0aef420e051"
+    },
+    {
+      "chunk_id": "candidate_resume:003",
+      "source_id": "candidate_resume",
+      "source_title": "Candidate resume: Anika Rao",
+      "category": "candidate",
+      "section": "Recent projects",
+      "line_start": 9,
+      "line_end": 15,
+      "text": "## Recent projects\n- Built Subscription Reality Check, a Streamlit app that lets users upload subscription data, score recurring expenses, simulate cancellation savings, and export a CSV action plan.\n- Wrote README documentation with local setup, Streamlit Community Cloud deployment steps, project structure, and testing commands.\n- Created tests for subscription scoring, savings calculations, and CSV validation using pytest.\n- Used pandas for data cleaning and aggregation, Altair for charts, and Streamlit session controls for user selection.",
+      "content_hash": "4dc951e99979"
+    },
+    {
+      "chunk_id": "candidate_resume:004",
+      "source_id": "candidate_resume",
+      "source_title": "Candidate resume: Anika Rao",
+      "category": "candidate",
+      "section": "Experience evidence",
+      "line_start": 16,
+      "line_end": 21,
+      "text": "## Experience evidence\n- Translated messy personal-finance decisions into a structured workflow with inputs, derived metrics, ranked recommendations, and exportable next steps.\n- Kept synthetic sample data separate from personal data for public sharing.\n- Documented implementation prompts, iterations, and lessons in submission artifacts.",
+      "content_hash": "0d51d6de6ec9"
+    },
+    {
+      "chunk_id": "candidate_resume:005",
+      "source_id": "candidate_resume",
+      "source_title": "Candidate resume: Anika Rao",
+      "category": "candidate",
+      "section": "Limits",
+      "line_start": 22,
+      "line_end": 26,
+      "text": "## Limits\n- The resume does not claim production operation of a deployed service.\n- The resume does not claim paid workplace experience as an AI engineer.\n- The resume does not list Kubernetes, Docker, Terraform, or SOC2 compliance work.",
+      "content_hash": "4685d2820a5d"
+    },
+    {
+      "chunk_id": "job_ai_product_builder:001",
+      "source_id": "job_ai_product_builder",
+      "source_title": "Job description: AI Product Builder Intern",
+      "category": "job",
+      "section": "Job description: AI Product Builder Intern",
+      "line_start": 1,
+      "line_end": 4,
+      "text": "# Job description: AI Product Builder Intern\nDocument category: job",
+      "content_hash": "85a81eb94b03"
+    },
+    {
+      "chunk_id": "job_ai_product_builder:002",
+      "source_id": "job_ai_product_builder",
+      "source_title": "Job description: AI Product Builder Intern",
+      "category": "job",
+      "section": "Requirements",
+      "line_start": 5,
+      "line_end": 13,
+      "text": "## Requirements\n- Build small AI-powered web apps that turn ambiguous user problems into clear workflows.\n- Use Python and Streamlit or a similar lightweight app framework.\n- Work with structured data, validation, and clear user-facing outputs.\n- Explain technical choices in README files and demo materials.\n- Use retrieval augmented generation or vector search to ground model answers.\n- Deploy prototypes to a shareable cloud environment.\n- Communicate limitations honestly when evidence is incomplete.",
+      "content_hash": "a6925af0ce6b"
+    },
+    {
+      "chunk_id": "job_platform_ml_engineer:001",
+      "source_id": "job_platform_ml_engineer",
+      "source_title": "Job description: Platform ML Engineer",
+      "category": "job",
+      "section": "Job description: Platform ML Engineer",
+      "line_start": 1,
+      "line_end": 4,
+      "text": "# Job description: Platform ML Engineer\nDocument category: job",
+      "content_hash": "250cb153ca80"
+    },
+    {
+      "chunk_id": "job_platform_ml_engineer:002",
+      "source_id": "job_platform_ml_engineer",
+      "source_title": "Job description: Platform ML Engineer",
+      "category": "job",
+      "section": "Requirements",
+      "line_start": 5,
+      "line_end": 13,
+      "text": "## Requirements\n- Operate containerized services using Docker and Kubernetes.\n- Build CI/CD pipelines for production model serving.\n- Monitor latency, reliability, and cost in live customer-facing systems.\n- Implement retrieval or search pipelines with explicit evaluation.\n- Write Python services with tests and clear documentation.\n- Own infrastructure-as-code changes using Terraform.\n- Support security and compliance reviews for enterprise customers.",
+      "content_hash": "582f98bfa070"
+    },
+    {
+      "chunk_id": "job_rag_evaluation_assistant:001",
+      "source_id": "job_rag_evaluation_assistant",
+      "source_title": "Job description: RAG Evaluation Assistant",
+      "category": "job",
+      "section": "Job description: RAG Evaluation Assistant",
+      "line_start": 1,
+      "line_end": 4,
+      "text": "# Job description: RAG Evaluation Assistant\nDocument category: job",
+      "content_hash": "6bec746f222d"
+    },
+    {
+      "chunk_id": "job_rag_evaluation_assistant:002",
+      "source_id": "job_rag_evaluation_assistant",
+      "source_title": "Job description: RAG Evaluation Assistant",
+      "category": "job",
+      "section": "Requirements",
+      "line_start": 5,
+      "line_end": 12,
+      "text": "## Requirements\n- Create RAG workflows that answer questions from a bounded document corpus.\n- Separate source evidence from instructions contained inside documents.\n- Measure faithfulness, retrieval precision, and unsupported-question handling.\n- Build a simple review interface where users can inspect citations.\n- Use Python to prepare data and validate outputs.\n- Explain what the system cannot prove from the available corpus.",
+      "content_hash": "1298baa22396"
+    },
+    {
+      "chunk_id": "project_prompt_log:001",
+      "source_id": "project_prompt_log",
+      "source_title": "Project artifact: Prompt and iteration log",
+      "category": "candidate",
+      "section": "Project artifact: Prompt and iteration log",
+      "line_start": 1,
+      "line_end": 4,
+      "text": "# Project artifact: Prompt and iteration log\nDocument category: candidate",
+      "content_hash": "6f987fe35736"
+    },
+    {
+      "chunk_id": "project_prompt_log:002",
+      "source_id": "project_prompt_log",
+      "source_title": "Project artifact: Prompt and iteration log",
+      "category": "candidate",
+      "section": "Prompting",
+      "line_start": 5,
+      "line_end": 8,
+      "text": "## Prompting\nThe candidate documented prompt iterations for generating product ideas, refining scope, and improving the Streamlit app structure.",
+      "content_hash": "e24033969d83"
+    },
+    {
+      "chunk_id": "project_prompt_log:003",
+      "source_id": "project_prompt_log",
+      "source_title": "Project artifact: Prompt and iteration log",
+      "category": "candidate",
+      "section": "Iteration notes",
+      "line_start": 9,
+      "line_end": 15,
+      "text": "## Iteration notes\n- Narrowed the project from general budget advice to recurring subscription decisions.\n- Added CSV validation after identifying that malformed inputs could make the app misleading.\n- Added export behavior so the output could become an action plan.\n- Recorded limitations instead of presenting the scoring formula as financial advice.",
+      "content_hash": "f711a1499f94"
+    },
+    {
+      "chunk_id": "project_prompt_log:004",
+      "source_id": "project_prompt_log",
+      "source_title": "Project artifact: Prompt and iteration log",
+      "category": "candidate",
+      "section": "Limits",
+      "line_start": 16,
+      "line_end": 18,
+      "text": "## Limits\nThe log supports iterative prompting and product scoping. It does not establish experience with multi-agent orchestration, vector databases, or enterprise support workflows.",
+      "content_hash": "137a40165496"
+    },
+    {
+      "chunk_id": "project_subscription_reality_check:001",
+      "source_id": "project_subscription_reality_check",
+      "source_title": "Project write-up: Subscription Reality Check",
+      "category": "candidate",
+      "section": "Project write-up: Subscription Reality Check",
+      "line_start": 1,
+      "line_end": 4,
+      "text": "# Project write-up: Subscription Reality Check\nDocument category: candidate",
+      "content_hash": "7fed42667b27"
+    },
+    {
+      "chunk_id": "project_subscription_reality_check:002",
+      "source_id": "project_subscription_reality_check",
+      "source_title": "Project write-up: Subscription Reality Check",
+      "category": "candidate",
+      "section": "Problem",
+      "line_start": 5,
+      "line_end": 8,
+      "text": "## Problem\nPeople often keep recurring subscriptions after usage drops. The project asks what yearly spending changes when selected subscriptions are removed.",
+      "content_hash": "594876ccfd18"
+    },
+    {
+      "chunk_id": "project_subscription_reality_check:003",
+      "source_id": "project_subscription_reality_check",
+      "source_title": "Project write-up: Subscription Reality Check",
+      "category": "candidate",
+      "section": "What was built",
+      "line_start": 9,
+      "line_end": 12,
+      "text": "## What was built\nThe app loads sample subscription data or a user-uploaded CSV, validates required columns, calculates monthly and yearly spend, computes cost per use, ranks subscriptions with a reality score, and exports a cancellation action plan.",
+      "content_hash": "bcba4bbb13f3"
+    },
+    {
+      "chunk_id": "project_subscription_reality_check:004",
+      "source_id": "project_subscription_reality_check",
+      "source_title": "Project write-up: Subscription Reality Check",
+      "category": "candidate",
+      "section": "Technical details",
+      "line_start": 13,
+      "line_end": 20,
+      "text": "## Technical details\n- Framework: Streamlit\n- Data tools: pandas and Altair\n- Tests: pytest unit tests for validation and scoring behavior\n- Deployment plan: Streamlit Community Cloud instructions documented in the README\n- Runtime: Python 3.12",
+      "content_hash": "95f965f622fd"
+    },
+    {
+      "chunk_id": "project_subscription_reality_check:005",
+      "source_id": "project_subscription_reality_check",
+      "source_title": "Project write-up: Subscription Reality Check",
+      "category": "candidate",
+      "section": "Evidence boundaries",
+      "line_start": 21,
+      "line_end": 23,
+      "text": "## Evidence boundaries\nThe README describes how to deploy the app. It does not prove that the app was deployed, monitored, or used by real external users.",
+      "content_hash": "fa3a305bef89"
+    }
+  ]
+}
