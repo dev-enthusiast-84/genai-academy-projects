@@ -1,10 +1,15 @@
 import { useState } from 'react';
 
 export default function Home() {
+  const [step, setStep] = useState(1); // 1: Input, 2: Recommendation, 3: Draft, 4: Review
   const [content, setContent] = useState('');
+  const [recommendation, setRecommendation] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [review, setReview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   const handleAnalyze = async () => {
     if (!content.trim()) {
@@ -14,167 +19,259 @@ export default function Home() {
 
     setLoading(true);
     setError(null);
-    setResult(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiUrl}/analyze`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: content,
-          content_type: 'linkedin',
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, content_type: 'linkedin' }),
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
 
       const data = await response.json();
-      setResult(data);
+      setRecommendation(data);
+      setStep(2);
     } catch (err) {
-      setError(err.message || 'Failed to analyze content');
-      console.error('Analysis error:', err);
+      setError(err.message || 'Analysis failed');
+      console.error('Error:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCreateDraft = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${apiUrl}/create-draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          strategy: recommendation,
+          voice_samples: ['Sample writing...'], // TODO: Get from user
+        }),
+      });
+
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+      const data = await response.json();
+      setDraft(data);
+      setStep(3);
+    } catch (err) {
+      setError(err.message || 'Draft creation failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReview = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${apiUrl}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      });
+
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+      const data = await response.json();
+      setReview(data);
+      setStep(4);
+    } catch (err) {
+      setError(err.message || 'Review failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setStep(1);
+    setContent('');
+    setRecommendation(null);
+    setDraft(null);
+    setReview(null);
+    setError(null);
+  };
+
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Content Strategist MVP</h1>
-      <p style={styles.subtitle}>Analyze, strategize, and generate optimized content</p>
+    <main className="container">
+      <div className="page">
+        <h1>📝 Content Strategist MVP</h1>
+        <p className="subtitle">Analyze, strategize, and generate optimized content</p>
 
-      <div style={styles.inputSection}>
-        <label style={styles.label}>Paste your content:</label>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Enter content to analyze..."
-          style={styles.textarea}
-          disabled={loading}
-        />
-        <button
-          onClick={handleAnalyze}
-          disabled={loading}
-          style={{...styles.button, opacity: loading ? 0.6 : 1}}
-        >
-          {loading ? 'Analyzing...' : 'Analyze'}
-        </button>
-      </div>
-
-      {error && (
-        <div style={styles.error}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-
-      {result && (
-        <div style={styles.result}>
-          <h2>Analysis Result</h2>
-          <div style={styles.resultItem}>
-            <strong>Action:</strong> {result.action}
+        {/* Progress Bar */}
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', color: '#666' }}>Step {step} of 4</span>
+            <span style={{ fontSize: '12px', color: '#666' }}>
+              {['Input', 'Recommendation', 'Draft', 'Review'][step - 1]}
+            </span>
           </div>
-          <div style={styles.resultItem}>
-            <strong>Reasoning:</strong> {result.reasoning}
-          </div>
-          <div style={styles.resultItem}>
-            <strong>Confidence:</strong> {(result.confidence * 100).toFixed(1)}%
+          <div className="progress">
+            <div
+              className="progress-bar"
+              style={{ width: `${(step / 4) * 100}%` }}
+            />
           </div>
         </div>
-      )}
 
-      <div style={styles.info}>
-        <p>API Status: <span style={styles.statusGreen}>Connected</span></p>
-        <p>Backend: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}</p>
+        {error && <div className="alert alert-error">❌ {error}</div>}
+
+        {/* Step 1: Input */}
+        {step === 1 && (
+          <div className="card">
+            <h2>Step 1: Paste Your Content</h2>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Enter your blog post, tweet, article, or idea..."
+              style={{ height: '200px' }}
+              disabled={loading}
+            />
+            <div className="button-group">
+              <button
+                className="button button-primary"
+                onClick={handleAnalyze}
+                disabled={loading || !content.trim()}
+              >
+                {loading ? '⏳ Analyzing...' : '📊 Analyze Content'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Recommendation */}
+        {step >= 2 && recommendation && (
+          <div className="card">
+            <h2>Step 2: Strategy Recommendation</h2>
+            <div style={{ marginBottom: '16px' }}>
+              <p><strong>Recommended Action:</strong> <span style={{ color: '#007bff', fontSize: '18px' }}>
+                {recommendation.action.toUpperCase()}
+              </span></p>
+              <p><strong>Reasoning:</strong> {recommendation.reasoning}</p>
+              <p><strong>Confidence:</strong> {(recommendation.confidence * 100).toFixed(1)}%</p>
+            </div>
+            {step === 2 && (
+              <div className="button-group">
+                <button
+                  className="button button-primary"
+                  onClick={handleCreateDraft}
+                  disabled={loading}
+                >
+                  {loading ? '⏳ Creating Draft...' : '✍️ Create Draft'}
+                </button>
+                <button
+                  className="button button-secondary"
+                  onClick={handleReset}
+                  disabled={loading}
+                >
+                  ↻ Start Over
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Draft */}
+        {step >= 3 && draft && !draft.error && (
+          <div className="card">
+            <h2>Step 3: Generated Draft</h2>
+            <p style={{ fontSize: '12px', color: '#999', marginBottom: '16px' }}>
+              {draft.word_count || 0} words • {draft.reading_time || 'N/A'}
+            </p>
+            <div style={{
+              background: '#f9f9f9',
+              padding: '16px',
+              borderRadius: '6px',
+              marginBottom: '16px',
+              borderLeft: '4px solid #007bff'
+            }}>
+              <h3 style={{ marginBottom: '12px' }}>{draft.title}</h3>
+              <p>{draft.body}</p>
+            </div>
+            {step === 3 && (
+              <div className="button-group">
+                <button
+                  className="button button-primary"
+                  onClick={handleReview}
+                  disabled={loading}
+                >
+                  {loading ? '⏳ Reviewing...' : '✔️ Review & Score'}
+                </button>
+                <button
+                  className="button button-secondary"
+                  onClick={handleReset}
+                  disabled={loading}
+                >
+                  ↻ Start Over
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 4: Review */}
+        {step >= 4 && review && !review.error && (
+          <div className="card">
+            <h2>Step 4: Quality Assessment</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <p><strong>Overall Quality:</strong></p>
+                <div style={{ fontSize: '32px', color: '#28a745', fontWeight: 'bold' }}>
+                  {review.quality_score?.toFixed(1) || '8.5'}/10
+                </div>
+              </div>
+              <div>
+                <p><strong>Verdict:</strong></p>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#28a745' }}>
+                  ✅ {review.overall_verdict}
+                </div>
+              </div>
+            </div>
+            <div style={{
+              background: '#f0f8f0',
+              padding: '12px',
+              borderRadius: '6px',
+              marginBottom: '16px'
+            }}>
+              <p style={{ marginBottom: '8px' }}><strong>Quality Breakdown:</strong></p>
+              <p>• Tone: {review.tone_score?.toFixed(1) || 'Good'}/10</p>
+              <p>• Clarity: {review.clarity_score?.toFixed(1) || 'Good'}/10</p>
+            </div>
+            <div className="button-group">
+              <button
+                className="button button-success"
+              >
+                ✓ Publish
+              </button>
+              <button
+                className="button button-secondary"
+                onClick={handleReset}
+              >
+                ↻ New Content
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Connection Status */}
+        <div style={{
+          marginTop: '40px',
+          padding: '16px',
+          background: '#f0f8ff',
+          borderRadius: '6px',
+          fontSize: '12px',
+          color: '#333'
+        }}>
+          <p>🔌 <strong>Backend:</strong> {apiUrl}</p>
+          <p>✅ <strong>Status:</strong> Connected</p>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
-
-const styles = {
-  container: {
-    maxWidth: '800px',
-    margin: '0 auto',
-    padding: '40px 20px',
-    fontFamily: 'sans-serif',
-    backgroundColor: '#f5f5f5',
-    minHeight: '100vh',
-  },
-  title: {
-    color: '#333',
-    marginBottom: '8px',
-  },
-  subtitle: {
-    color: '#666',
-    marginBottom: '30px',
-  },
-  inputSection: {
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '8px',
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  textarea: {
-    width: '100%',
-    height: '150px',
-    padding: '10px',
-    marginBottom: '15px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontFamily: 'monospace',
-    fontSize: '14px',
-    boxSizing: 'border-box',
-  },
-  button: {
-    backgroundColor: '#007bff',
-    color: 'white',
-    padding: '10px 20px',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: 'bold',
-  },
-  result: {
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    borderLeft: '4px solid #28a745',
-  },
-  resultItem: {
-    marginBottom: '12px',
-    color: '#333',
-  },
-  error: {
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-    padding: '12px',
-    borderRadius: '4px',
-    marginBottom: '20px',
-    border: '1px solid #f5c6cb',
-  },
-  info: {
-    backgroundColor: 'white',
-    padding: '15px',
-    borderRadius: '4px',
-    fontSize: '14px',
-    color: '#666',
-  },
-  statusGreen: {
-    color: '#28a745',
-    fontWeight: 'bold',
-  },
-};

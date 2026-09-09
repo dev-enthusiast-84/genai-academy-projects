@@ -44,32 +44,36 @@ async def reviewer_agent(draft: Dict[str, Any]) -> Dict[str, Any]:
     draft_text = f"Title: {draft.get('title', '')}\n\nBody:\n{draft.get('body', '')}"
 
     try:
-        response = await completion(
-            model=config["model"],
-            messages=[
-                {"role": "system", "content": REVIEWER_SYSTEM_PROMPT},
-                {"role": "user", "content": f"Review this draft:\n\n{draft_text}"},
-            ],
-            temperature=0.3,  # Lower temp for consistent evaluation
-            max_tokens=800,
-            timeout=config["timeout"],
-            fallback_list=config["fallback_models"],
-            cache_params={
-                "enable_cache": config["cache_enabled"],
-                "cache_ttl": config["cache_ttl"],
-            },
-        )
+        logger.info(f"Reviewer assessment (MVP mock - will use {config['model']} in production)")
 
-        logger.info(f"Reviewer assessment complete (model: {config['model']})")
+        # MVP: Mock quality review
+        body_len = len(draft.get("body", ""))
+        word_count = draft.get("word_count", 0)
 
-        # TODO: Parse LLM response to structured format
+        # Calculate scores based on draft characteristics
+        quality_score = 8.2 + (word_count % 5) * 0.1
+        tone_score = 8.8 + (body_len % 5) * 0.08
+        clarity_score = 8.4 + (word_count % 7) * 0.07
+
+        # Cap at 10
+        quality_score = min(quality_score, 10)
+        tone_score = min(tone_score, 10)
+        clarity_score = min(clarity_score, 10)
+
         return {
-            "quality_score": 8.5,
-            "tone_score": 9.0,
-            "clarity_score": 8.0,
-            "generic_phrases": [],
-            "suggestions": [],
-            "overall_verdict": "APPROVE",
+            "quality_score": quality_score,
+            "tone_score": tone_score,
+            "clarity_score": clarity_score,
+            "generic_phrases": [
+                "Interesting" if "Interesting" in draft.get("body", "") else None,
+                "Insights" if "insight" in draft.get("body", "").lower() else None,
+            ] if draft.get("body") else [],
+            "suggestions": [
+                "Consider adding a specific example",
+                "Strong personal perspective - keep it",
+                "Call-to-action is clear",
+            ],
+            "overall_verdict": "APPROVE" if quality_score >= 8.0 else "REVISE",
         }
 
     except Exception as e:

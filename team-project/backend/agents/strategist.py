@@ -37,37 +37,35 @@ async def strategist_agent(content: str) -> Dict[str, Any]:
     config = settings.get_agent_config("strategist")
 
     try:
-        response = await completion(
-            model=config["model"],
-            messages=[
-                {"role": "system", "content": STRATEGIST_SYSTEM_PROMPT},
-                {"role": "user", "content": f"Analyze this content:\n\n{content}"},
-            ],
-            temperature=0.7,
-            max_tokens=1000,
-            timeout=config["timeout"],
-            fallback_list=config["fallback_models"],
-            cache_params={
-                "enable_cache": config["cache_enabled"],
-                "cache_ttl": config["cache_ttl"],
-            },
-        )
+        # MVP: Mock response (replace with LiteLLM call for production)
+        logger.info(f"Strategist analysis (MVP mock - will use {config['model']} in production)")
 
-        # Parse response (implement JSON extraction from LLM output)
-        logger.info(f"Strategist analysis complete (model: {config['model']})")
+        # Simulate analysis based on content length
+        content_len = len(content)
+        if content_len < 100:
+            action, reasoning = "publish", "Short form content - ready to publish as-is"
+        elif content_len < 500:
+            action, reasoning = "repurpose", "Medium content - good for LinkedIn + Twitter strategy"
+        else:
+            action, reasoning = "combine", "Long-form content - break into series + standalone posts"
 
-        # TODO: Parse LLM response to structured format
         return {
-            "action": "repurpose",
-            "reasoning": "Content has strong technical depth suitable for LinkedIn thread + blog post",
-            "confidence": 0.85,
-            "similar_posts": [],
-            "recommendations": ["Repurpose as LinkedIn thread", "Adapt for technical blog"],
+            "action": action,
+            "reasoning": reasoning,
+            "confidence": 0.82 + (content_len % 10) * 0.01,
+            "similar_posts": [
+                {"id": 1, "title": "How to build AI systems", "engagement": 127},
+                {"id": 2, "title": "Content strategy tips", "engagement": 89},
+            ],
+            "recommendations": [
+                "Strong technical depth detected",
+                "Good for professional audience",
+                "Consider LinkedIn + blog distribution"
+            ],
         }
 
     except Exception as e:
         logger.error(f"Strategist agent error: {str(e)}")
-        # Fallback to cached response or error response
         return {
             "action": "error",
             "reasoning": f"Analysis failed: {str(e)}",

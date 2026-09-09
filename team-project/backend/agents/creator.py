@@ -54,30 +54,35 @@ User's Writing Voice (for consistency):
 Generate a high-quality draft that maintains their voice and follows the strategy."""
 
     try:
-        response = await completion(
-            model=config["model"],
-            messages=[
-                {"role": "system", "content": CREATOR_SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.8,
-            max_tokens=1500,
-            timeout=config["timeout"],
-            fallback_list=config["fallback_models"],
-            cache_params={
-                "enable_cache": config["cache_enabled"],
-                "cache_ttl": config["cache_ttl"],
+        logger.info(f"Creator draft (MVP mock - will use {config['model']} in production)")
+
+        # MVP: Mock draft response
+        action = strategy.get("action", "repurpose")
+        sample_drafts = {
+            "publish": {
+                "title": "My Latest Insights on Content Strategy",
+                "body": "I've been thinking a lot about how content creators can better leverage their unique voice...\n\nHere are my key takeaways:\n\n1. Authenticity wins over perfection\n2. Consistency builds trust\n3. Audience needs drive strategy\n\nWhat are your thoughts? I'd love to hear what works for you.",
+                "word_count": 240,
             },
-        )
+            "repurpose": {
+                "title": "The Art of Content Repurposing: How I Cut Production Time by 60%",
+                "body": "One of the biggest time-wasters in content creation is doing everything from scratch.\n\nInstead, I've developed a system for repurposing core ideas across multiple platforms:\n\n**LinkedIn:** Thought leadership threads\n**Blog:** Deep-dive articles\n**Twitter:** Micro-insights\n\nThis doesn't mean duplicating content—it's about adapting the same core message for each platform's unique audience and format.\n\nThe result? I spend 30% of the time creating 3x the content.\n\nHave you tried repurposing? What's your biggest challenge?",
+                "word_count": 385,
+            },
+            "combine": {
+                "title": "Building Scalable Content Systems: Lessons from 2 Years of Shipping",
+                "body": "After shipping hundreds of content pieces, I've learned that content creation at scale requires systems, not heroics.\n\nHere's what actually works:\n\n1. **One source, many outputs**\n   - Write once, publish everywhere\n   - Adapt for each platform\n   - Track what resonates\n\n2. **Batch your creation**\n   - Dedicated content days\n   - Reduce context switching\n   - Improve quality and speed\n\n3. **Build your unique voice**\n   - Consistency in tone\n   - Authentic perspective\n   - Trust over clicks\n\nThe platforms change, but these principles remain true.\n\nWhat system do you use for your content? I'm curious what works outside my bubble.",
+                "word_count": 520,
+            },
+        }
 
-        logger.info(f"Creator draft complete (model: {config['model']})")
+        draft_template = sample_drafts.get(action, sample_drafts["repurpose"])
 
-        # TODO: Parse LLM response to structured format
         return {
-            "title": "How I Built This AI Content System",
-            "body": "Lorem ipsum dolor sit amet...",
-            "word_count": 350,
-            "reading_time": "2 min",
+            "title": draft_template["title"],
+            "body": draft_template["body"],
+            "word_count": draft_template["word_count"],
+            "reading_time": f"{max(1, draft_template['word_count'] // 200)} min",
             "platform": "linkedin",
             "quality_preview": {"tone": "professional", "clarity": "high"},
         }
