@@ -188,6 +188,89 @@ const useApproveStrategy = () => {
 - Border radius: 8px
 - Line height: 1.6
 
+## ADDED: Accessibility & Enterprise Design Standards
+
+### Requirement: WCAG AA Compliance
+The system SHALL meet Web Content Accessibility Guidelines (WCAG) 2.1 Level AA standards.
+
+#### Scenario: Keyboard navigation
+- **WHEN** user navigates with Tab key
+- **THEN** focus visible on all interactive elements (buttons, inputs, links)
+- **AND** focus order follows logical page flow
+- **AND** can reach all functionality without mouse
+
+#### Scenario: Color contrast
+- **WHEN** text and background colors are displayed
+- **THEN** contrast ratio ≥ 4.5:1 for normal text
+- **AND** ≥ 3:1 for large text (18pt+)
+- **AND** information not conveyed by color alone
+
+#### Scenario: Screen reader support
+- **WHEN** screen reader accesses page
+- **THEN** all images have alt text
+- **AND** form inputs have associated labels
+- **AND** landmarks (nav, main, footer) clearly marked
+- **AND** error messages announced to screen readers
+
+#### Scenario: Motion & animations
+- **WHEN** user has prefers-reduced-motion enabled
+- **THEN** animations are disabled/simplified
+- **AND** no content flashes >3 times per second
+
+### Requirement: Enterprise Design System
+The system SHALL follow professional enterprise design standards.
+
+#### Visual Hierarchy
+- Primary action: Large (18px), prominent color, clear CTAs
+- Secondary action: Medium (16px), subdued color
+- Supporting text: Small (14px), gray color, proper line-height
+- Headings: Clear size progression (H1: 32px, H2: 24px, H3: 18px)
+
+#### Spacing & Grid
+- Base unit: 8px grid system
+- Padding: 8px, 16px, 24px, 32px, 48px
+- Gap between components: 24px standard
+- Card spacing: 16px internal, 24px external
+
+#### Typography
+- Headings: System font, 600 weight, clear hierarchy
+- Body: System font, 400 weight, 1.6 line-height
+- Code: Monospace, 13px, 1.5 line-height
+
+#### Color Palette (Light & Dark modes)
+```
+Primary: #0066cc (blue) - Actions, focus states
+Success: #059669 (green) - Positive actions
+Warning: #d97706 (amber) - Warnings
+Error: #dc2626 (red) - Errors
+Neutral-50: #f9fafb - Light backgrounds
+Neutral-100: #f3f4f6 - Cards
+Neutral-900: #111827 - Text (light mode)
+Dark-900: #0f172a - Background (dark mode)
+Dark-50: #f8fafc - Text (dark mode)
+```
+
+#### Loading & Motion
+- Spinner: Smooth rotation, 1s duration
+- Transitions: 200ms standard, cubic-bezier(0.4, 0, 0.2, 1)
+- Hover states: Subtle scale + color shift
+- Focus states: 2px solid outline, 2px offset
+
+### Requirement: Dark Mode Support
+The system SHALL support both light and dark color schemes.
+
+#### Scenario: System preference detection
+- **WHEN** page loads
+- **THEN** system detects prefers-color-scheme
+- **AND** applies matching theme (light or dark)
+- **AND** stores user preference in localStorage
+
+#### Scenario: Theme toggle
+- **WHEN** user clicks theme toggle button
+- **THEN** theme switches immediately
+- **AND** preference persists across sessions
+- **AND** all components update colors
+
 ## Phase 2: Enhanced UI
 
 - Multi-user workspaces with team collaboration
