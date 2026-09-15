@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "synthetic": true,
+  "records": [
+    {
+      "service": "journal",
+      "id": "J1",
+      "user_id": "U1",
+      "version": 1,
+      "type": "journal_entry",
+      "content": "I prefer quiet indoor activities after work."
+    },
+    {
+      "service": "personalization",
+      "id": "P1",
+      "user_id": "U1",
+      "version": 1,
+      "type": "derived_preference",
+      "content": "Prefers quiet indoor activities."
+    },
+    {
+      "service": "recommendations",
+      "id": "C1",
+      "user_id": "U1",
+      "version": 1,
+      "type": "cached_segment",
+      "content": "quiet-indoor"
+    },
+    {
+      "service": "journal",
+      "id": "J2",
+      "user_id": "U1",
+      "version": 1,
+      "type": "journal_entry",
+      "content": "I enjoy sketching on weekends."
+    },
+    {
+      "service": "personalization",
+      "id": "P2",
+      "user_id": "U1",
+      "version": 1,
+      "type": "derived_preference",
+      "content": "Enjoys sketching."
+    },
+    {
+      "service": "recommendations",
+      "id": "C2",
+      "user_id": "U1",
+      "version": 1,
+      "type": "cached_segment",
+      "content": "weekend-art"
+    },
+    {
+      "service": "journal",
+      "id": "J3",
+      "user_id": "U2",
+      "version": 1,
+      "type": "journal_entry",
+      "content": "I prefer quiet indoor activities after work."
+    },
+    {
+      "service": "personalization",
+      "id": "P3",
+      "user_id": "U2",
+      "version": 1,
+      "type": "derived_preference",
+      "content": "Prefers quiet indoor activities."
+    },
+    {
+      "service": "recommendations",
+      "id": "C3",
+      "user_id": "U2",
+      "version": 1,
+      "type": "cached_segment",
+      "content": "quiet-indoor"
+    }
+  ],
+  "lineage": [
+    {
+      "source": "J1",
+      "target": "P1",
+      "relationship": "derived_from",
+      "evidence_id": "E1a"
+    },
+    {
+      "source": "P1",
+      "target": "C1",
+      "relationship": "copied_from",
+      "evidence_id": "E1b"
+    },
+    {
+      "source": "J2",
+      "target": "P2",
+      "relationship": "derived_from",
+      "evidence_id": "E2a"
+    },
+    {
+      "source": "P2",
+      "target": "C2",
+      "relationship": "copied_from",
+      "evidence_id": "E2b"
+    },
+    {
+      "source": "J3",
+      "target": "P3",
+      "relationship": "derived_from",
+      "evidence_id": "E3a"
+    },
+    {
+      "source": "P3",
+      "target": "C3",
+      "relationship": "copied_from",
+      "evidence_id": "E3b"
+    }
+  ],
+  "users": [
+    {
+      "id": "U1",
+      "name": "Avery Example"
+    },
+    {
+      "id": "U2",
+      "name": "Jordan Example"
+    }
+  ]
+}
