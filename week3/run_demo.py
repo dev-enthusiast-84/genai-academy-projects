@@ -12,7 +12,9 @@ import time
 import httpx
 
 from withdrawal.core import Engine
-from withdrawal.services import HttpServices, PORTS
+from withdrawal.services import HttpServices
+
+PORTS = HttpServices.PORTS
 
 ROOT = Path(__file__).resolve().parent
 
