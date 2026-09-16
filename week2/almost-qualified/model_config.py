@@ -20,11 +20,10 @@ class ModelOption:
 
 
 MODEL_CATALOG = [
-    ModelOption("openrouter", "OpenRouter: GPT-5 mini", "openrouter/openai/gpt-5-mini", "OPENROUTER_API_KEY", "Recommended if you have an OpenRouter key."),
-    ModelOption("openrouter", "OpenRouter: Claude Sonnet", "openrouter/anthropic/claude-sonnet-4", "OPENROUTER_API_KEY", "Good reasoning model if available in your account."),
-    ModelOption("openrouter", "OpenRouter: Gemini Flash", "openrouter/google/gemini-2.5-flash", "OPENROUTER_API_KEY", "Fast option for demos."),
-    ModelOption("openai", "OpenAI: GPT-5 mini", "openai/gpt-5-mini", "OPENAI_API_KEY", "Use if you have Platform API billing."),
-    ModelOption("anthropic", "Anthropic: Claude Sonnet", "anthropic/claude-sonnet-4-5", "ANTHROPIC_API_KEY", "Use if you already have Anthropic API access."),
+    ModelOption("openai", "OpenAI: GPT-4", "gpt-4", "OPENAI_API_KEY", "Fast and reliable. Requires OpenAI API key."),
+    ModelOption("openai", "OpenAI: GPT-4o mini", "gpt-4o-mini", "OPENAI_API_KEY", "Lightweight option for faster inference."),
+    ModelOption("google", "Google: Gemini 2.0 Flash", "gemini-2.0-flash", "GOOGLE_API_KEY", "Fast model. Requires Google AI API key."),
+    ModelOption("anthropic", "Anthropic: Claude Sonnet", "claude-3-5-sonnet-20241022", "ANTHROPIC_API_KEY", "Use if you have Anthropic API access."),
 ]
 
 
