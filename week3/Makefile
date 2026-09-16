@@ -18,6 +18,13 @@ help:
 	@echo "  $(GREEN)make showcase$(NC)   - Interactive workflow showcase (after running make demo)"
 	@echo "  $(GREEN)make demo-models$(NC) - Show demo with different model combinations"
 	@echo ""
+	@echo "$(YELLOW)APP SHORTCUTS (after make demo is running):$(NC)"
+	@echo "  $(GREEN)make recall$(NC)     - Open Recall Dashboard (8501)"
+	@echo "  $(GREEN)make portal$(NC)     - Open Club Portal (8101)"
+	@echo "  $(GREEN)make booking$(NC)    - Open Class Booking (8102)"
+	@echo "  $(GREEN)make offers$(NC)     - Open Member Offers (8103)"
+	@echo "  $(GREEN)make open-all$(NC)   - Open all 4 apps in browser"
+	@echo ""
 	@echo "$(YELLOW)MANAGEMENT:$(NC)"
 	@echo "  $(GREEN)make llm$(NC)        - Start only LiteLLM proxy"
 	@echo "  $(GREEN)make app$(NC)        - Start only Recall app"
@@ -175,6 +182,34 @@ showcase:
 	@echo ""
 	@echo "$(GREEN)✓ Demo complete!$(NC)"
 	@echo ""
+
+# ============================================================================
+# APP ALIASES & SHORTCUTS
+# ============================================================================
+
+recall:
+	@echo "Opening Recall Dashboard..."
+	@open http://127.0.0.1:8501 || xdg-open http://127.0.0.1:8501 || echo "Open browser to: http://127.0.0.1:8501"
+
+portal:
+	@echo "Opening Club Portal..."
+	@open http://127.0.0.1:8101 || xdg-open http://127.0.0.1:8101 || echo "Open browser to: http://127.0.0.1:8101"
+
+booking:
+	@echo "Opening Class Booking..."
+	@open http://127.0.0.1:8102 || xdg-open http://127.0.0.1:8102 || echo "Open browser to: http://127.0.0.1:8102"
+
+offers:
+	@echo "Opening Member Offers..."
+	@open http://127.0.0.1:8103 || xdg-open http://127.0.0.1:8103 || echo "Open browser to: http://127.0.0.1:8103"
+
+open-all:
+	@echo "Opening all 4 apps..."
+	@$(MAKE) recall > /dev/null 2>&1 &
+	@$(MAKE) portal > /dev/null 2>&1 &
+	@$(MAKE) booking > /dev/null 2>&1 &
+	@$(MAKE) offers > /dev/null 2>&1 &
+	@echo "$(GREEN)✓ Opening Recall (8501), Club Portal (8101), Class Booking (8102), Member Offers (8103)$(NC)"
 
 demo-models:
 	@echo ""
