@@ -2,7 +2,13 @@
 import json
 import sys
 from pathlib import Path
-from flask import Flask, jsonify, request
+
+# Ensure Flask is available
+try:
+    from flask import Flask, jsonify, request
+except ImportError:
+    print("Flask not found. Install with: pip install flask")
+    sys.exit(1)
 
 # Service data
 SERVICE_DATA = {

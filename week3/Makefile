@@ -65,7 +65,11 @@ llm:
 
 app:
 	@echo "$(BLUE)Starting Recall app...$(NC)"
-	@python3 run_demo.py
+	@if [ -f .venv/bin/activate ]; then \
+		. .venv/bin/activate && python run_demo.py; \
+	else \
+		python3 run_demo.py; \
+	fi
 
 stop:
 	@echo "$(BLUE)Stopping all processes...$(NC)"
@@ -121,7 +125,11 @@ demo: stop llm-bg
 	@echo "$(GREEN)✓ LiteLLM proxy started on port 4000$(NC)"
 	@echo ""
 	@echo "$(BLUE)Starting all 4 apps...$(NC)"
-	@python3 run_demo.py
+	@if [ -f .venv/bin/activate ]; then \
+		. .venv/bin/activate && python run_demo.py; \
+	else \
+		python3 run_demo.py; \
+	fi
 
 showcase:
 	@echo ""
