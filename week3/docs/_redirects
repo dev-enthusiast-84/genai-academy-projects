@@ -1,0 +1,44 @@
+# GitHub Pages redirect configuration
+# Ensure proper routing for nested documentation
+
+# Redirect root to index
+/week3           /week3/docs/              301
+
+# API documentation redirects
+/week3/api       /week3/docs/api.md        301
+/week3/docs/api  /week3/docs/api.md        301
+
+# Architecture documentation
+/week3/architecture           /week3/docs/architecture.md          301
+/week3/architecture-diagram   /week3/docs/architecture-diagram.md  301
+/week3/system-design          /week3/docs/architecture.md          301
+
+# Getting started
+/week3/quickstart       /week3/docs/getting-started.md  301
+/week3/getting-started  /week3/docs/getting-started.md  301
+/week3/install          /week3/docs/getting-started.md  301
+
+# Demo & showcase
+/week3/demo       /week3/docs/demo-guide.md  301
+/week3/demo-guide /week3/docs/demo-guide.md  301
+/week3/showcase   /week3/docs/demo-guide.md  301
+
+# Configuration
+/week3/config         /week3/docs/configuration.md  301
+/week3/configuration  /week3/docs/configuration.md  301
+/week3/env            /week3/docs/configuration.md  301
+
+# Help & Support
+/week3/help             /week3/docs/troubleshooting.md  301
+/week3/troubleshooting  /week3/docs/troubleshooting.md  301
+/week3/faq              /week3/docs/troubleshooting.md  301
+/week3/issues           /week3/docs/troubleshooting.md  301
+
+# Development
+/week3/dev          /week3/docs/contributing.md  301
+/week3/develop      /week3/docs/contributing.md  301
+/week3/contributing /week3/docs/contributing.md  301
+
+# Command reference
+/week3/commands  /README.md  301
+/week3/cli       /README.md  301
