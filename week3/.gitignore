@@ -42,8 +42,6 @@ wheels/
 *.sqlite3
 
 # Logs
-.litellm.log
-.litellm.pid
 *.log
 
 # Test Coverage

@@ -46,6 +46,37 @@ def test_invalid_review_fails_closed(engine,bad):
     assert req['status']=='blocked'
     with pytest.raises(BoundaryError): engine.approve(req['id'],'U1')
 
+
+def test_review_receives_lineage_and_unlinked_booking_preservation(engine):
+    class EvidenceReview:
+        def complete(self, messages, tools):
+            payload = json.loads(messages[-1]['content'])
+            trail = payload['evidence']['lineage'][0]
+            assert trail['root'] == 'D1'
+            assert trail['shared_dependencies'] == []
+            assert {r['id'] for r in trail['records']} == {'D1', 'T1', 'V1', 'V2', 'P1', 'C1', 'Q1'}
+            actions = {r['id']: r['action'] for r in payload['exact_record_actions']}
+            assert actions['B1'] == 'KEEP'
+            assert all(actions[rid] == 'DELETE' for rid in ['P1', 'C1', 'Q1'])
+            return review()
+
+    clients = {'investigator': Script(investigation()),
+               'scope_reviewer': EvidenceReview(), 'judge': EvidenceReview()}
+    result = review_plan(engine, clients, 'U1',
+                         'Withdraw D1 and its shared interests, recommendations and queued offers. Keep my paid booking.')
+    assert result['action'] == 'propose'
+    assert result['plan']['status'] == 'awaiting_approval'
+    assert engine.inspect_service('U1', 'B1')['state'] == 'present'
+    assert result['plan']['approval'] is None
+
+
+def test_external_parent_is_still_a_shared_dependency(engine):
+    engine.db.execute("INSERT INTO edges VALUES ('D2','C1','EXTERNAL-PARENT')")
+    engine.db.commit()
+    assert engine.trace_lineage('U1', 'D1')['shared_dependencies'] == ['C1']
+    with pytest.raises(BoundaryError):
+        engine.create_plan('U1', ['D1'])
+
 def test_judge_disagreement_clarifies_before_approval(engine):
     req=review_plan(engine,Script(investigation()+[review(),review('clarify')]),'U1','Withdraw D1.')['plan']
     assert req['evaluation']['verdict']=='clarify'
@@ -80,5 +111,34 @@ def test_role_settings_defaults_and_legacy(tmp_path,monkeypatch):
     config=tmp_path/'config.env'
     config.write_text('LLM_PROVIDER=openrouter\n')
     assert settings(config)['models']['scope_reviewer']=='anthropic/claude-sonnet-4.6'
-    config.write_text('LLM_PROVIDER=litellm\nLLM_MODEL=proxy-alias\nLLM_JUDGE_MODEL=judge-alias\n')
+    config.write_text('LLM_PROVIDER=openrouter\nLLM_MODEL=proxy-alias\nLLM_JUDGE_MODEL=judge-alias\n')
     assert settings(config)['models']=={'investigator':'proxy-alias','scope_reviewer':'proxy-alias','judge':'judge-alias','auditor':'proxy-alias'}
+
+
+def test_false_booking_clarification_gets_one_evidence_correction(engine):
+    false_question = {'content': json.dumps({'action': 'clarify', 'message': 'Keep Q1 as the paid booking?'})}
+    class CorrectedInvestigation(Script):
+        def complete(self, messages, tools):
+            if 'Application evidence check' in messages[-1]['content']:
+                facts = json.loads(messages[-1]['content'].split('\n', 1)[1])
+                types = {r['id']: r for r in facts['record_types']}
+                assert types['Q1'] == {'id': 'Q1', 'kind': 'queued_message', 'protected': False}
+                assert types['B1']['protected'] is True
+                assert facts['lineage'][0]['shared_dependencies'] == []
+            return super().complete(messages, tools)
+    script = investigation()
+    result = review_plan(engine, CorrectedInvestigation(script[:2] + [false_question, script[2], review(), review()]),
+                         'U1', 'Withdraw D1 and its descendants. Keep my paid booking.')
+    assert result['plan']['status'] == 'awaiting_approval'
+    assert result['plan']['approval'] is None
+    assert 'Q1' in {t['id'] for t in result['plan']['targets']}
+    assert 'B1' not in {t['id'] for t in result['plan']['targets']}
+
+
+def test_genuine_clarification_stays_blocked_after_single_recheck(engine):
+    question = {'content': json.dumps({'action': 'clarify', 'message': 'Keeping Q1 conflicts with removing every descendant. Which scope do you intend?'})}
+    client = Script(investigation()[:2] + [question, question])
+    result = review_plan(engine, client, 'U1', 'Withdraw D1 and all descendants but keep Q1.')
+    assert result['action'] == 'clarify'
+    assert engine.latest('U1') is None
+    assert engine.inspect_service('U1', 'Q1')['state'] == 'present'

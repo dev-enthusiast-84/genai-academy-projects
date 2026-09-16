@@ -22,6 +22,7 @@ def available(port):
     for attempt in range(5):
         try:
             with socket.socket() as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 sock.bind(('127.0.0.1', port))
             return
         except OSError:
@@ -48,6 +49,10 @@ def main():
             if line.strip() and not line.lstrip().startswith('#') and '=' in line:
                 key, value = line.split('=', 1)
                 file_env[key.strip()] = value.strip().strip('"').strip("'")
+    # The UI reads model settings from .env on each rerun. Exporting a snapshot
+    # here would override later file edits for the lifetime of the process.
+    file_env = {key: value for key, value in file_env.items()
+                if not key.startswith(('LLM_', 'OPENAI_', 'OPENROUTER_'))}
     env = dict(file_env, **os.environ)
     urls = {name: f'http://127.0.0.1:{port}' for name, port in PORTS.items()}
     env.update(RECALL_SERVICE_URLS=json.dumps(urls), RECALL_SERVICE_TOKEN=token,

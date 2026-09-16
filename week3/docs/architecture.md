@@ -21,10 +21,10 @@ A deep dive into Recall's system design and components.
         ▼                  ▼                  ▼
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
 │ LLM Agents   │  │ Service APIs │  │ Local SQLite │
-│ (LiteLLM)    │  │ (Flask)      │  │ Database     │
+│ (Direct API)    │  │ (Flask)      │  │ Database     │
 └──────────────┘  └──────────────┘  └──────────────┘
         │                  │
-    Ollama Models    3 Customer Services
+    Provider API    3 Customer Services
 ```
 
 ## Component Architecture
@@ -48,7 +48,7 @@ A deep dive into Recall's system design and components.
 ### 3. LLM Agent Layer
 
 **ModelClient** (`withdrawal/agent.py`)
-- Communicates with LiteLLM proxy
+- Communicates directly with OpenAI or OpenRouter
 - Defines tool schemas for agents
 - Handles model errors gracefully
 
@@ -105,17 +105,9 @@ Member Offers (8103)
 └─ GET /health
 ```
 
-### 5. LLM Backend Layer
+### 5. Model provider layer
 
-**LiteLLM Proxy** (localhost:4000)
-```
-litellm --model ollama/phi
-├─ Ollama Connection
-│  ├─ phi (2.7B)
-│  └─ orca-mini (3B)
-└─ OpenAI-Compatible API
-   └─ /chat/completions
-```
+ModelClient calls OpenAI or OpenRouter directly over HTTPS. Each role has a configurable model; the judge must differ from the investigator. No local model server is started.
 
 ### 6. Data Layer
 
@@ -139,25 +131,25 @@ User Request
     ↓
 investigator.discover_records("D1")
     ↓ (calls LLM)
-LiteLLM → Ollama (phi 2.7B)
+Configured provider API
     ↓
 Tool Response: [List of records]
     ↓
 investigator.trace_lineage("D1")
     ↓ (calls LLM)
-LiteLLM → Ollama
+Configured provider API
     ↓
 Tool Response: [Dependency graph]
     ↓
 investigator.inspect_service("V1")
     ↓ (calls LLM)
-LiteLLM → Ollama
+Configured provider API
     ↓
 Tool Response: [Record state: present/absent/unknown]
     ↓
 scope_reviewer.review_plan(findings)
     ↓ (calls LLM)
-LiteLLM → Ollama (orca-mini 3B)
+Configured provider API
     ↓
 Review: [Approve/Challenge with findings]
     ↓
@@ -231,15 +223,15 @@ notify_withdrawal_status(engine, user, request_id, config)
 
 ```env
 # LLM Provider Configuration
-LLM_PROVIDER=litellm
-LLM_BASE_URL=http://localhost:4000/v1
-LLM_API_KEY=sk-1234
+LLM_PROVIDER=openrouter
+LLM_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_API_KEY=your-key
 
 # Role-specific Models
-LLM_INVESTIGATOR_MODEL=ollama/phi
-LLM_SCOPE_REVIEWER_MODEL=ollama/orca-mini
-LLM_JUDGE_MODEL=ollama/phi
-LLM_AUDITOR_MODEL=ollama/phi
+LLM_INVESTIGATOR_MODEL=openai/gpt-5.4-mini
+LLM_SCOPE_REVIEWER_MODEL=anthropic/claude-sonnet-4.6
+LLM_JUDGE_MODEL=anthropic/claude-sonnet-4.6
+LLM_AUDITOR_MODEL=openai/gpt-5.4-mini
 
 # Optional Features
 NOTIFICATION_ENABLED=false
@@ -321,10 +313,10 @@ Would need:
 
 Edit `.env`:
 ```env
-LLM_INVESTIGATOR_MODEL=ollama/neural-chat
+LLM_INVESTIGATOR_MODEL=openai/gpt-5.4-mini
 ```
 
-Must be available in Ollama: `ollama list`
+Use **Load available models** in the sidebar to check provider access.
 
 ### Adding New Tools
 

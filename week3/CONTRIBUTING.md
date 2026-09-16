@@ -7,15 +7,17 @@ We welcome contributions! This guide will help you get started.
 ```bash
 # 1. Fork & clone
 git clone <your-fork>
-cd week3
+cd <your-fork-directory>/week3
 
 # 2. Setup dev environment
-pip install -r requirements.txt
-pip install litellm pytest black flake8
+python3 -m venv .venv
+source .venv/bin/activate
+make install
+python -m pip install pytest black flake8
 
-# 3. Download models
-ollama pull phi
-ollama pull orca-mini
+# 3. Configure provider
+test -f .env || cp .env.example .env
+# Configure OpenAI or OpenRouter credentials for live mode; rehearsal needs no key.
 
 # 4. Start development
 make demo

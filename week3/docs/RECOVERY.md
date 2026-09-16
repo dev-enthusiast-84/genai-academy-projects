@@ -8,7 +8,7 @@ The current fitness-consent proposal and dashboard workflow view are retained. R
 - Deleting the source profile leaves downstream copies visible, demonstrating the problem.
 - Bounded model investigation, scope review, and a judge prepare an exact plan. Human approval is required before withdrawal.
 - Saved approval and progress, bounded retries, outage recovery, independent absence checks, protected bookings, and replay blocking.
-- Optional read-only MCP transport and configurable OpenRouter/LiteLLM models remain available.
+- Optional read-only MCP transport and configurable OpenAI/OpenRouter models remain available.
 
 ## Current UI retained
 

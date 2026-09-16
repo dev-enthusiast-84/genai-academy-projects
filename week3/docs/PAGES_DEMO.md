@@ -1,5 +1,7 @@
 # Hosted fitness demo
 
+See [Deployment](deployment.md) for synchronizing public artifacts and configuring GitHub Pages.
+
 ## Pages
 
 - `scenario.html`: optional overview showing all three customer apps together.

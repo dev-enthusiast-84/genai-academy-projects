@@ -8,7 +8,7 @@ Help improve Recall!
 
 ```bash
 git clone <your-fork>
-cd week3
+cd <your-fork-directory>/week3
 ```
 
 ### 2. Create Branch
@@ -23,15 +23,16 @@ git checkout -b fix/issue-description
 
 ```bash
 # Install dependencies
-pip install -r requirements.txt
-pip install litellm
+python3 -m venv .venv
+source .venv/bin/activate
+make install
 
 # Install dev dependencies
-pip install pytest pytest-cov black flake8
+python -m pip install pytest pytest-cov black flake8
 
-# Download models
-ollama pull phi
-ollama pull orca-mini
+# Configure provider
+test -f .env || cp .env.example .env
+# Configure OpenAI or OpenRouter credentials for live mode; rehearsal needs no key.
 
 # Run tests
 pytest tests/

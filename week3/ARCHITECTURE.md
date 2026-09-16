@@ -15,7 +15,7 @@ Recall is a **multi-agent LLM system** for managing data withdrawal with:
 
 - **4 Specialized Agents**: Investigator, Scope Reviewer, Judge, Auditor
 - **4 Customer Services**: Club Portal, Class Booking, Member Offers (+ Recall Dashboard)
-- **Local LLM Inference**: Ollama + LiteLLM (no external API costs)
+- **Model APIs**: OpenAI or OpenRouter (provider charges may apply)
 - **Verified Deletion**: Independent verification that data is actually gone
 
 ## Core Components
@@ -25,9 +25,9 @@ User Interface (Streamlit)
     ↓
 Engine (Workflow Orchestration)
     ↓
-LLM Agents (OpenAI-Compatible via LiteLLM)
+LLM Agents (direct provider API)
     ↓
-Ollama (Local Model Inference)
+OpenAI or OpenRouter
 
 Service APIs (Flask)
     ↓
@@ -49,14 +49,14 @@ SQLite Database (Local State)
 - Verification receipts
 
 ### 🔐 Privacy-First Design
-- No external API calls (uses local Ollama)
+- Authorized synthetic evidence is sent to the selected provider in live mode
 - Real deletion (not soft deletes)
 - Explicit approval gates
 - Automated verification
 
 ### ⚡ Flexible Model Selection
-- Use fast models (phi) for quick demos
-- Switch to better models (mixtral) for accuracy
+- Configure models independently for each role
+- Use a separate judge model to review proposals
 - Swap models without restarting
 - Compare quality across models
 
@@ -107,7 +107,7 @@ make help
 ## Tech Stack
 
 - **Frontend**: Streamlit (Python)
-- **LLM**: LiteLLM + Ollama (local inference)
+- **LLM**: OpenAI or OpenRouter (direct API)
 - **Services**: Flask (Python)
 - **Database**: SQLite (local)
 - **Build**: Makefile (consolidated commands)

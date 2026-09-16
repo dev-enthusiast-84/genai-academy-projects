@@ -1,8 +1,12 @@
 #!/bin/sh
-# Launch the current Recall dashboard and its three connected customer apps.
+# Compatibility shortcut; Make is the single entry point for lifecycle commands.
 set -eu
 cd "$(dirname "$0")"
-if [ -x .venv/bin/python ]; then
-    exec .venv/bin/python run_demo.py "$@"
+if [ "$#" -eq 0 ]; then
+    exec make demo
 fi
-exec python3 run_demo.py "$@"
+if [ "$#" -eq 1 ] && [ "$1" = "--reset" ]; then
+    exec make reset
+fi
+echo "Use make demo, make restart, or make reset." >&2
+exit 2

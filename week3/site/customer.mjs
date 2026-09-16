@@ -25,7 +25,9 @@ function render(){
     content='<div class="eyebrow">A LITTLE SOMETHING FOR YOU</div><h1>Your next<br>good thing.</h1><p>Invitations inspired by what you love.</p><div class="offer-art" aria-hidden="true"><span>✳</span></div>';
     content+=active('Q1')?'<div class="invitation"><span class="tag">JUST FOR AVERY</span><h2>Your evening<br>yoga invitation.</h2><p>A complimentary taster this Thursday.<br>Because you enjoy evening yoga.</p><div class="coupon">QUEUED INVITATION · NOT SENT</div></div>':`<div class="empty"><h2>${consent.state==='withdrawn'?'Your choice comes first.':'Good things take a moment.'}</h2><p>${consent.state==='withdrawn'?'Your audience profile and queued invitation have been removed.':'No personalized invitation yet. We use interests only after you agree in Club Portal.'}</p></div>`;
   }
-  $('content').innerHTML=content+'<p id="message" role="status"></p><footer>SYNTHETIC CUSTOMER APP · OWN SERVICE RECORDS</footer>';
+  const purpose = service==='documents' ? 'Here: give consent or delete only your questionnaire. To withdraw consent and remove copies across all apps, use Recall.' : service==='search' ? 'Here: view your saved booking and personalized suggestions. Removing the questionnaire in Club Portal does not remove these copies.' : 'Here: view your personalized invitation. This is a preview; nothing is sent.';
+  const actions = '<section class="card"><h2>What you can do here</h2><p>'+purpose+'</p><p><a class="recall-link" href="index.html" target="_blank" rel="noopener">Withdraw across all apps in Recall ↗</a></p></section>';
+  $('content').innerHTML=actions+content+'<p id="message" role="status"></p><footer>SYNTHETIC CUSTOMER APP · OWN SERVICE RECORDS</footer>';
   if(embedded)document.querySelector('.recall-link')?.addEventListener('click',event=>{
     const request=window.parent.document.getElementById('request-section');
     if(request){event.preventDefault();request.scrollIntoView({block:'start'});window.parent.document.getElementById('request')?.focus({preventScroll:true});}

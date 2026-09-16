@@ -53,7 +53,7 @@ Usage:
   recall <command>
 
 Commands:
-  start/demo       Start all 4 apps + LiteLLM
+  start/demo       Start all 4 apps
   stop             Stop all processes
   reset            Reset demo data
 

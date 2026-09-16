@@ -23,28 +23,28 @@ engine = Engine(".runtime/fitness-local")
 # Create model clients for each agent
 clients = {
     "investigator": ModelClient(
-        base_url="http://localhost:4000/v1",
-        api_key="sk-1234",
-        model="ollama/phi",
-        provider="litellm",
+        base_url="https://openrouter.ai/api/v1",
+        api_key="your-provider-key",
+        model="openai/gpt-5.4-mini",
+        provider="openrouter",
     ),
     "reviewer": ModelClient(
-        base_url="http://localhost:4000/v1",
-        api_key="sk-1234",
-        model="ollama/orca-mini",
-        provider="litellm",
+        base_url="https://openrouter.ai/api/v1",
+        api_key="your-provider-key",
+        model="anthropic/claude-sonnet-4.6",
+        provider="openrouter",
     ),
     "judge": ModelClient(
-        base_url="http://localhost:4000/v1",
-        api_key="sk-1234",
-        model="ollama/phi",
-        provider="litellm",
+        base_url="https://openrouter.ai/api/v1",
+        api_key="your-provider-key",
+        model="anthropic/claude-sonnet-4.6",
+        provider="openrouter",
     ),
     "auditor": ModelClient(
-        base_url="http://localhost:4000/v1",
-        api_key="sk-1234",
-        model="ollama/phi",
-        provider="litellm",
+        base_url="https://openrouter.ai/api/v1",
+        api_key="your-provider-key",
+        model="openai/gpt-5.4-mini",
+        provider="openrouter",
     ),
 }
 
@@ -106,9 +106,9 @@ Communicates with LLM providers:
 from withdrawal.agent import ModelClient, INVESTIGATOR_TOOLS
 
 client = ModelClient(
-    base_url="http://localhost:4000/v1",
-    api_key="sk-1234",
-    model="ollama/phi",
+    base_url="https://openrouter.ai/api/v1",
+    api_key="your-provider-key",
+    model="openai/gpt-5.4-mini",
 )
 
 # List available models
@@ -274,15 +274,15 @@ Set environment variables:
 
 ```bash
 # LLM Provider
-LLM_PROVIDER=litellm
-LLM_BASE_URL=http://localhost:4000/v1
-LLM_API_KEY=sk-1234
+LLM_PROVIDER=openrouter
+LLM_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_API_KEY=your-key
 
 # Agent Models
-LLM_INVESTIGATOR_MODEL=ollama/phi
-LLM_SCOPE_REVIEWER_MODEL=ollama/orca-mini
-LLM_JUDGE_MODEL=ollama/phi
-LLM_AUDITOR_MODEL=ollama/phi
+LLM_INVESTIGATOR_MODEL=openai/gpt-5.4-mini
+LLM_SCOPE_REVIEWER_MODEL=anthropic/claude-sonnet-4.6
+LLM_JUDGE_MODEL=anthropic/claude-sonnet-4.6
+LLM_AUDITOR_MODEL=openai/gpt-5.4-mini
 
 # Notifications (optional)
 NOTIFICATION_ENABLED=true

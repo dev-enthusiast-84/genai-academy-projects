@@ -30,6 +30,39 @@ p,label{line-height:1.55}button{min-height:42px}button:focus-visible,a:focus-vis
 [data-testid=stHeader]{background:var(--paper);color:var(--ink)}
 [data-testid=stSidebar], [data-testid=stWidgetLabel], [data-testid=stCaptionContainer]{color:var(--ink)!important}
 [data-testid=stWidgetLabel] p, [data-testid=stCaptionContainer] p{color:var(--ink)!important}
+/* Option labels have their own Markdown theme color, separate from the
+   widget heading. Keep them readable on Recall's pale surfaces. */
+:is([data-testid=stRadio],[data-testid=stCheckbox]) label [data-testid=stMarkdownContainer],
+:is([data-testid=stRadio],[data-testid=stCheckbox]) label [data-testid=stMarkdownContainer] *{
+    color:var(--ink)!important;-webkit-text-fill-color:currentColor!important;
+}
+[data-testid=stSidebar] [data-testid=stTooltipIcon]{color:var(--muted)!important}
+[data-testid=stSpinner]{color:var(--ink)!important}
+[data-testid=stSpinner] p{color:var(--ink)!important;-webkit-text-fill-color:currentColor!important}
+[data-testid=stButton] button:not([kind=primary]) *{
+    color:inherit!important;-webkit-text-fill-color:currentColor!important;
+}
+/* Alert backgrounds and nested Markdown must use the same palette even when
+   Streamlit follows a dark browser theme. */
+[data-testid=stAlertContainer]{
+    --alert-bg:#eeeee6;--alert-ink:#393b32;--alert-border:#cacbbf;
+    background:var(--alert-bg)!important;color:var(--alert-ink)!important;
+    border:1px solid var(--alert-border)!important;
+}
+[data-testid=stAlertContainer]:has([data-testid=stAlertContentWarning]){
+    --alert-bg:#fff3d6;--alert-ink:#65480b;--alert-border:#dbc48b;
+}
+[data-testid=stAlertContainer]:has([data-testid=stAlertContentSuccess]){
+    --alert-bg:#e8f1e9;--alert-ink:#234b35;--alert-border:#b8cdbd;
+}
+[data-testid=stAlertContainer]:has([data-testid=stAlertContentError]){
+    --alert-bg:#faeae5;--alert-ink:#7b3027;--alert-border:#dfb6ac;
+}
+[data-testid=stAlertContainer] *{
+    color:var(--alert-ink)!important;-webkit-text-fill-color:currentColor!important;
+}
+[data-testid=stAlertContainer] [data-testid=stMarkdownContainer]{overflow-wrap:anywhere;white-space:normal}
+[data-testid=stAlertContainer] a{text-decoration:underline}
 [data-testid=stTextInput] input, [data-testid=stTextArea] textarea,
 [data-baseweb=base-input], [data-baseweb=input], [data-baseweb=textarea],
 [data-baseweb=select]>div{background:#fff!important;color:var(--ink)!important;-webkit-text-fill-color:var(--ink)}
@@ -38,7 +71,28 @@ input::placeholder,textarea::placeholder{color:#62564b!important;-webkit-text-fi
 [data-baseweb=popover], [data-baseweb=popover] ul, [role=listbox], [role=option]{background:#fff!important;color:var(--ink)!important}
 [role=option]:hover, [role=option][aria-selected=true]{background:#e9e4d6!important}
 [data-testid=stButton] button, [data-testid=stLinkButton] a{background:#fff;color:var(--ink);border-color:#b8a797}
-[data-testid=stButton] button[kind=primary], [data-testid=stFormSubmitButton] button[kind=primary]{background:#85651f;color:#fff}
+/* Download widgets use a separate container from standard buttons. */
+[data-testid=stDownloadButton] button{
+    background:#fff!important;color:var(--ink)!important;border-color:#b8a797!important;
+}
+[data-testid=stDownloadButton] button *{
+    color:inherit!important;-webkit-text-fill-color:currentColor!important;
+}
+[data-testid=stDownloadButton] button:hover{
+    background:#eeeee6!important;color:var(--ink)!important;border-color:var(--accent)!important;
+}
+/* Streamlit gives nested Markdown labels their own theme color. Style the
+   label as well as the anchor so dark-mode text cannot turn white on white. */
+[data-testid=stLinkButton] a,
+[data-testid=stLinkButton] a:visited{background:#fff!important;color:#292b27!important;border-color:#b8a797!important}
+[data-testid=stLinkButton] a *{color:inherit!important;-webkit-text-fill-color:currentColor!important}
+[data-testid=stLinkButton] a:hover{background:#eeeee6!important;color:#292b27!important;border-color:#85651f!important}
+[data-testid=stLinkButton] a:focus-visible{outline:3px solid #85651f!important;outline-offset:3px}
+[data-testid=stButton] button[kind=primary], [data-testid=stFormSubmitButton] button[kind=primary]{background:#85651f!important;border-color:#85651f!important;color:#fff!important}
+:is([data-testid=stButton],[data-testid=stFormSubmitButton]) button[kind=primary]:not(:disabled):is(:hover,:focus-visible,:active){
+    background:#6b5018!important;border-color:#6b5018!important;color:#fff!important;
+}
+[data-testid=stButton] button[kind=primary] *, [data-testid=stFormSubmitButton] button[kind=primary] *{color:inherit!important;-webkit-text-fill-color:currentColor!important}
 [data-testid=stExpander] details{background:var(--paper);border-color:var(--line);color:var(--ink)}
 [data-testid=stExpander] summary,
 [data-testid=stExpander] summary:hover,
@@ -50,3 +104,14 @@ input::placeholder,textarea::placeholder{color:#62564b!important;-webkit-text-fi
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 .brand{background:#292b27;color:#fff;padding:22px 26px;border-radius:4px}.brand-note{color:#ded8c3}.brand-symbol{background:#b8a064;color:#292b27}.stamp{transform:none}
+
+/* Each portal link carries the destination app's brand. */
+.st-key-app-documents{--app-color:#984b32;--app-hover:#7d3b26}
+.st-key-app-search{--app-color:#215446;--app-hover:#173f34}
+.st-key-app-personalization{--app-color:#69445e;--app-hover:#513349}
+:is(.st-key-app-documents,.st-key-app-search,.st-key-app-personalization) [data-testid=stLinkButton] a{
+    background:var(--app-color)!important;border-color:var(--app-color)!important;color:#fff!important;
+}
+:is(.st-key-app-documents,.st-key-app-search,.st-key-app-personalization) [data-testid=stLinkButton] a:hover{
+    background:var(--app-hover)!important;border-color:var(--app-hover)!important;color:#fff!important;
+}

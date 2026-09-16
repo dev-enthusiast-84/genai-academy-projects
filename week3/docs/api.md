@@ -12,7 +12,7 @@ Recall uses a multi-agent system where specialized LLM agents work together to i
 
 **Purpose**: Discover records, trace dependencies, inspect service state
 
-**Model**: `LLM_INVESTIGATOR_MODEL` (default: `ollama/phi`)
+**Model**: `LLM_INVESTIGATOR_MODEL` (default: `openai/gpt-5.4-mini`)
 
 **Available Tools**:
 - `discover_records`
@@ -23,7 +23,7 @@ Recall uses a multi-agent system where specialized LLM agents work together to i
 
 **Purpose**: Review proposals, challenge assumptions, ensure correctness
 
-**Model**: `LLM_SCOPE_REVIEWER_MODEL` (default: `ollama/orca-mini`)
+**Model**: `LLM_SCOPE_REVIEWER_MODEL` (default: `anthropic/claude-sonnet-4.6`)
 
 **Available Tools**:
 - Review feedback (via LLM reasoning)
@@ -32,7 +32,7 @@ Recall uses a multi-agent system where specialized LLM agents work together to i
 
 **Purpose**: Evaluate proposals against evidence, identify issues
 
-**Model**: `LLM_JUDGE_MODEL` (default: `ollama/phi`)
+**Model**: `LLM_JUDGE_MODEL` (default: `openai/gpt-5.4-mini`)
 
 **Available Tools**:
 - Evaluation feedback (via LLM reasoning)
@@ -41,7 +41,7 @@ Recall uses a multi-agent system where specialized LLM agents work together to i
 
 **Purpose**: Verify outcomes, report findings post-deletion
 
-**Model**: `LLM_AUDITOR_MODEL` (default: `ollama/phi`)
+**Model**: `LLM_AUDITOR_MODEL` (default: `openai/gpt-5.4-mini`)
 
 **Available Tools**:
 - `inspect_service` (verification only)
@@ -317,15 +317,15 @@ except ModelError as e:
 
 ```env
 # LLM Provider
-LLM_PROVIDER=litellm
-LLM_BASE_URL=http://localhost:4000/v1
-LLM_API_KEY=sk-1234
+LLM_PROVIDER=openrouter
+LLM_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_API_KEY=your-key
 
 # Model Selection
-LLM_INVESTIGATOR_MODEL=ollama/phi
-LLM_SCOPE_REVIEWER_MODEL=ollama/orca-mini
-LLM_JUDGE_MODEL=ollama/phi
-LLM_AUDITOR_MODEL=ollama/phi
+LLM_INVESTIGATOR_MODEL=openai/gpt-5.4-mini
+LLM_SCOPE_REVIEWER_MODEL=anthropic/claude-sonnet-4.6
+LLM_JUDGE_MODEL=anthropic/claude-sonnet-4.6
+LLM_AUDITOR_MODEL=openai/gpt-5.4-mini
 ```
 
 ### Programmatic Configuration
@@ -334,10 +334,10 @@ LLM_AUDITOR_MODEL=ollama/phi
 from withdrawal.agent import ModelClient
 
 client = ModelClient(
-    base_url='http://localhost:4000/v1',
-    api_key='sk-1234',
-    model='ollama/phi',
-    provider='litellm'
+    base_url='https://openrouter.ai/api/v1',
+    api_key='your-provider-key',
+    model='openai/gpt-5.4-mini',
+    provider='openrouter'
 )
 
 # Get available models
@@ -401,10 +401,10 @@ print(f"Title: {state['title']}")
 from withdrawal.review import review_plan
 
 clients = {
-    'investigator': ModelClient(..., model='ollama/phi'),
-    'scope_reviewer': ModelClient(..., model='ollama/orca-mini'),
-    'judge': ModelClient(..., model='ollama/phi'),
-    'auditor': ModelClient(..., model='ollama/phi')
+    'investigator': ModelClient(..., model='openai/gpt-5.4-mini'),
+    'scope_reviewer': ModelClient(..., model='anthropic/claude-sonnet-4.6'),
+    'judge': ModelClient(..., model='anthropic/claude-sonnet-4.6'),
+    'auditor': ModelClient(..., model='openai/gpt-5.4-mini')
 }
 
 # Run full investigation
@@ -423,13 +423,7 @@ print(f"Message: {result['message']}")
 
 ## Rate Limits & Quotas
 
-### Local (Ollama)
-
-- **Requests**: Unlimited
-- **Concurrency**: 1 (single model at a time)
-- **Timeout**: 45 seconds per request
-
-### OpenRouter (if configured)
+### OpenAI and OpenRouter
 
 - **Requests**: Based on account quota
 - **Rate limit**: Subject to OpenRouter limits

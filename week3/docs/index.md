@@ -80,33 +80,9 @@ Three independent customer applications demonstrate data sharing:
 
 ## Getting Started
 
-### Minimum Requirements
+Use the [Getting started guide](getting-started.md) for Python 3.10+, virtual-environment setup, provider configuration, and `make demo`. Node.js is required for the browser-engine tests.
 
-- Python 3.9+
-- Ollama (for local LLM models)
-- 8GB+ RAM
-- ~6GB disk space (for models)
-
-### Installation (1 minute)
-
-```bash
-# 1. Clone and navigate
-git clone <repo>
-cd week3
-
-# 2. Install dependencies
-pip install -r requirements.txt
-pip install litellm
-
-# 3. Download models
-ollama pull phi
-ollama pull orca-mini
-
-# 4. Start everything
-make start
-```
-
-Then open: **http://127.0.0.1:8501**
+See [Deployment](deployment.md) for the connected local app, persistent data, optional MCP transport, and publishing the browser app's artifacts to GitHub Pages.
 
 ## What Makes This Different?
 
@@ -125,8 +101,8 @@ Then open: **http://127.0.0.1:8501**
 ## Technology Stack
 
 - **Frontend**: Streamlit (reactive UI)
-- **LLM Backend**: LiteLLM + Ollama (local inference)
-- **Models**: Phi 2.7B, Orca-Mini 3B (open-source)
+- **LLM Backend**: OpenAI or OpenRouter (direct API)
+- **Models**: Configurable models for each role
 - **Services**: Flask (local APIs)
 - **Database**: SQLite (local storage)
 

@@ -4,66 +4,17 @@ Visual representations of Recall's system architecture.
 
 ## System Overview
 
+```mermaid
+flowchart TD
+    Dashboard[Recall dashboard :8501] --> Engine[Withdrawal engine]
+    Engine --> Agents[Investigator, scope reviewer, judge, auditor]
+    Agents --> Provider[OpenAI or OpenRouter API]
+    Engine --> State[SQLite workflow state]
+    Engine --> Club[Club Portal :8101]
+    Engine --> Booking[Class Booking :8102]
+    Engine --> Offers[Member Offers :8103]
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                               │
-│                         🎯 RECALL SYSTEM ARCHITECTURE                        │
-│                                                                               │
-└─────────────────────────────────────────────────────────────────────────────┘
 
-                            ┌──────────────────────┐
-                            │  User's Browser      │
-                            │  (Single Tab)        │
-                            └──────────┬───────────┘
-                                       │
-                    ┌──────────────────┼──────────────────┐
-                    │                  │                  │
-                    ▼                  ▼                  ▼
-            ┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-            │ Club Portal    │  │ Class Booking  │  │ Member Offers  │
-            │ (8101)         │  │ (8102)         │  │ (8103)         │
-            │                │  │                │  │                │
-            │ Flask App      │  │ Flask App      │  │ Flask App      │
-            │ Documents DB   │  │ Search DB      │  │ Personalization│
-            └────────────────┘  └────────────────┘  └────────────────┘
-                    ▲                  ▲                  ▲
-                    │                  │                  │
-                    │    ┌─────────────┴─────────────┐    │
-                    │    │                           │    │
-                    └────┤    Service Layer          ├────┘
-                         │    (withdrawal/core.py)  │
-                         │    - Consent Management  │
-                         │    - Deletion Workflow   │
-                         │    - Verification       │
-                         └─────────────┬─────────────┘
-                                       │
-                    ┌──────────────────┼──────────────────┐
-                    │                  │                  │
-                    ▼                  ▼                  ▼
-            ┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-            │ LLM Agents     │  │ SQLite DB      │  │ Streamlit UI   │
-            │ (LiteLLM)      │  │ Workflow State │  │ (8501)         │
-            │                │  │                │  │                │
-            │ 4 Roles:       │  │ • Catalog      │  │ Dashboard      │
-            │ • Investigator │  │ • Requests     │  │ • Model Select │
-            │ • Reviewer     │  │ • Records      │  │ • Investigation│
-            │ • Judge        │  │ • Edges        │  │ • Approval     │
-            │ • Auditor      │  │ • Reviews      │  │ • Verification│
-            └────────┬───────┘  └────────────────┘  └────────────────┘
-                     │
-                     ▼
-            ┌────────────────┐
-            │ Ollama Server  │
-            │ (localhost)    │
-            │                │
-            │ Models:        │
-            │ • phi (2.7B)   │
-            │ • orca-mini    │
-            │ • mistral      │
-            │ • neural-chat  │
-            │ • mixtral      │
-            └────────────────┘
-```
 
 ## Workflow: Investigation & Withdrawal
 
@@ -227,18 +178,18 @@ Streamlit (8501)
     │    ┌────────────┐   ┌────────────┐  ┌────────────┐   ┌────────────┐
     │    │ Investigator    │   │ Scope Reviewer  │  │Judge       │   │ Auditor
     │    │ Agent      │   │ Agent       │  │Agent      │   │ Agent
-    │    │ (phi)      │   │ (orca-mini) │  │(phi)      │   │ (phi)
+    │    │ (configured)      │   │ (configured) │  │(configured)      │   │ (configured)
     │    └────────────┘   └────────────┘  └────────────┘   └────────────┘
     │         │                │                │                │
     │         └────────────────┴────────────────┴────────────────┘
     │                          │
     │                          ▼
-    │                 LiteLLM Proxy (4000)
-    │                 OpenAI Compatible API
+    │                 Direct provider API
+    │                 OpenAI or OpenRouter
     │                          │
     │                          ▼
-    │                    Ollama Server
-    │                    (Local Inference)
+    │                    Provider models
+    │                    (Remote inference)
     │
     ├─ Services (services.py)
     │  ├─ Proxies HTTP calls

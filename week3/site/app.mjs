@@ -6,7 +6,7 @@ let engine;
 try {engine=new Engine(fixture,localStorage);}catch(error){$('notice').hidden=false;$('notice').textContent=error.message;throw error;}
 let config={provider:'openrouter',base:'https://openrouter.ai/api/v1',key:'',model:''};
 let busy=false,needsClarification=false,history=[],liveTrace=[],selection=null;
-const ready=()=>Boolean(config.model&&(config.key||config.provider==='litellm'));
+const ready=()=>Boolean(config.model&&config.key);
 const notice=(message,type='')=>{const box=$('notice');box.textContent=message;box.className=`notice ${type}`;box.hidden=!message;};
 async function action(fn){
   if(busy)return;busy=true;document.body.classList.add('busy');renderControls();
@@ -100,7 +100,7 @@ $('settings-open').onclick=()=>$('settings-dialog').showModal();
 $('about-open').onclick=()=>$('about-dialog').showModal();
 $('scenario-open').onclick=()=>$('scenario-dialog').showModal();
 $('save-scenario').onclick=()=>{$('scenario-dialog').close();notice($('scenario').value==='healthy'?'Healthy services selected.':`Test scenario selected: ${$('scenario').selectedOptions[0].text}.`);};
-$('provider').onchange=()=>{$('base-url').value=$('provider').value==='openrouter'?'https://openrouter.ai/api/v1':'http://localhost:4000/v1';$('api-key').value='';$('model').value='';$('models').replaceChildren();};
+$('provider').onchange=()=>{$('base-url').value=$('provider').value==='openrouter'?'https://openrouter.ai/api/v1':'https://api.openai.com/v1';$('api-key').value='';$('model').value='';$('models').replaceChildren();};
 const formConfig=()=>({provider:$('provider').value,base:$('base-url').value.trim(),key:$('api-key').value.trim(),model:$('model').value.trim()});
 $('load-models').onclick=async()=>{
   const button=$('load-models');button.disabled=true;$('settings-status').textContent='Loading models…';

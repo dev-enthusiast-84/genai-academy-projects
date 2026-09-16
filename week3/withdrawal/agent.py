@@ -1,4 +1,4 @@
-"""Provider-neutral tool-calling investigator for OpenRouter or LiteLLM."""
+"""Provider-neutral investigator for OpenAI and OpenRouter."""
 from __future__ import annotations
 import json
 import os
@@ -12,29 +12,49 @@ class ModelError(RuntimeError):
     pass
 
 
-def settings(path='.env'):
+def validate_role_models(models):
+    def normalize(model):
+        return model.strip().casefold()
+    if models.get('investigator') and models.get('judge') and normalize(models['investigator']) == normalize(models['judge']):
+        raise ModelError('The judge must use a different model from the investigator. Change the judge model before investigating.')
+
+
+def settings(path='.env', provider=None):
     values = {}
     if Path(path).exists():
         for line in Path(path).read_text().splitlines():
             if line.strip() and not line.lstrip().startswith('#') and '=' in line:
                 key, value = line.split('=', 1)
                 values[key.strip()] = value.strip().strip('\"\'')
-    for key in ['LLM_PROVIDER', 'LLM_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL', 'OPENROUTER_API_KEY', 'LLM_INVESTIGATOR_MODEL', 'LLM_SCOPE_REVIEWER_MODEL', 'LLM_JUDGE_MODEL', 'LLM_AUDITOR_MODEL']:
+    for key in ['LLM_PROVIDER', 'LLM_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL', 'OPENROUTER_API_KEY', 'LLM_INVESTIGATOR_MODEL', 'LLM_SCOPE_REVIEWER_MODEL', 'LLM_JUDGE_MODEL', 'LLM_AUDITOR_MODEL', 'OPENAI_API_KEY', 'OPENAI_INVESTIGATOR_MODEL', 'OPENAI_SCOPE_REVIEWER_MODEL', 'OPENAI_JUDGE_MODEL', 'OPENAI_AUDITOR_MODEL']:
         if os.environ.get(key):
             values[key] = os.environ[key]
-    provider = values.get('LLM_PROVIDER', 'openrouter')
+    configured_provider = values.get('LLM_PROVIDER', 'openai')
+    provider = provider or configured_provider
+    if provider not in {'openai', 'openrouter'}:
+        raise ModelError('Unsupported model provider. Select openai or openrouter in LLM_PROVIDER.')
+    if provider == 'openai':
+        models = {role: values.get('OPENAI_' + role.upper() + '_MODEL') or default
+                  for role, default in {'investigator': 'gpt-4.1-mini', 'scope_reviewer': 'gpt-4.1-mini',
+                                        'judge': 'gpt-4.1', 'auditor': 'gpt-4.1-mini'}.items()}
+        return {'provider': provider, 'models': models, 'base_url': 'https://api.openai.com/v1',
+                'api_key': values.get('OPENAI_API_KEY', ''), 'model': models['investigator']}
+    if provider != configured_provider:
+        values = {key: value for key, value in values.items() if not key.startswith('LLM_')}
     defaults = {'investigator': 'openai/gpt-5.4-mini', 'scope_reviewer': 'anthropic/claude-sonnet-4.6',
-                'judge': 'openai/gpt-5.4-mini', 'auditor': 'anthropic/claude-sonnet-4.6'}
+                'judge': 'anthropic/claude-sonnet-4.6', 'auditor': 'anthropic/claude-sonnet-4.6'}
     models = {role: values.get('LLM_' + role.upper() + '_MODEL') or values.get('LLM_MODEL') or
               (default if provider == 'openrouter' else '') for role, default in defaults.items()}
     return {'models': models, 'provider': provider, 'base_url': values.get('LLM_BASE_URL') or
-            ('https://openrouter.ai/api/v1' if provider == 'openrouter' else 'http://localhost:4000/v1'),
+            'https://openrouter.ai/api/v1',
             'api_key': values.get('LLM_API_KEY') or values.get('OPENROUTER_API_KEY', ''),
             'model': values.get('LLM_MODEL', '')}
 
 
 class ModelClient:
     def __init__(self, base_url, api_key, model, provider='openrouter', transport=None):
+        if provider not in {'openai', 'openrouter'}:
+            raise ModelError('Unsupported model provider. Select openai or openrouter.')
         parsed = urlparse(base_url)
         if parsed.scheme != 'https' and not (parsed.scheme == 'http' and parsed.hostname in ['localhost', '127.0.0.1', '::1']):
             raise ModelError('Use HTTPS, or a local HTTP proxy.')
@@ -44,11 +64,14 @@ class ModelClient:
         self.transport = transport
 
     def _request(self, method, path, payload=None):
+        if self.provider == 'openai' and not self.key:
+            raise ModelError('Add OPENAI_API_KEY to .env or enter it in the sidebar to use OpenAI.')
         headers = {'Content-Type': 'application/json'}
         if self.key:
             headers['Authorization'] = f'Bearer {self.key}'
         try:
-            with httpx.Client(timeout=45, transport=self.transport, follow_redirects=False) as client:
+            with httpx.Client(timeout=45, transport=self.transport, follow_redirects=False,
+                              trust_env=urlparse(self.url).hostname not in {'localhost', '127.0.0.1', '::1'}) as client:
                 for attempt in range(2):
                     response = client.request(method, self.url+path, headers=headers, json=payload)
                     if response.status_code in [429, 500, 502, 503, 504] and attempt == 0:
@@ -59,6 +82,10 @@ class ModelClient:
                         return response.json()
                     except ValueError:
                         raise ModelError('Provider returned an invalid JSON response.') from None
+        except httpx.TimeoutException:
+            raise ModelError('The model provider timed out after 45 seconds. It may still be loading or generating. No deletion has been performed.') from None
+        except httpx.ConnectError:
+            raise ModelError('Cannot connect to the model provider. Check connectivity; no deletion has been performed.') from None
         except httpx.HTTPError:
             raise ModelError('Cannot reach the model provider. Check connectivity; no deletion has been performed.') from None
 
@@ -77,6 +104,8 @@ class ModelClient:
         payload = {'model': self.model, 'messages': messages, 'max_tokens': 1600}
         if tools:
             payload.update(tools=tools, tool_choice='auto')
+        elif self.provider == 'openai':
+            payload['response_format'] = {'type': 'json_object'}
         if self.provider == 'openrouter':
             payload['provider'] = {'require_parameters': True}
         data = self._request('POST', '/chat/completions', payload)
@@ -107,6 +136,16 @@ The only supported operation is deleting specified source records and all their 
 plus withdrawing recorded sharing consent for those roots and blocking re-ingestion of those stable IDs.
 Paid bookings and public class listings are protected. Preserve unrelated membership records. Never promise purpose restriction, external deletion, backups,
 or model unlearning. If the user wants a different operation, explain that limitation in a clarification.
+Keeping a record means leaving it outside deletion scope; it does not need to be linked to the selected root.
+Record kind comes from tool evidence, never from the wording of the request or a guessed ID.
+Only records whose kind is paid_booking or class_listing are protected by those rules.
+Use discover_records to identify protected records outside the lineage, such as a paid booking the user asks to keep.
+The trace_lineage result explicitly reports shared_dependencies: descendants with an incoming dependency
+from outside the selected root's closure. An ordinary parent-child chain or sharing across services is NOT
+a shared dependency. If shared_dependencies is empty, do not invent a conflict because descendants depend
+on one another. Withdraw the whole evidenced closure, including intermediate records and their descendants.
+Do not ask the user to enumerate descendants already established by lineage or to preserve them unless
+the user actually requested an exclusion. A requested exclusion within the closure requires clarification.
 First discover authorized records; use title/ID to identify intended roots. If several roots fit and the user
 has not specified which, ask a focused question. Trace each candidate root and inspect relevant service states.
 Decide which reads to do next from the evidence. Do not infer lineage from similar text. Do not access another
@@ -135,6 +174,7 @@ def investigate(engine, client, user, request, history=None, on_event=None, mcp_
             messages.append({'role': h['role'], 'content': h['content'][:4000]})
     messages.append({'role': 'user', 'content': request[:4000]})
     trace, traced, discovered, tool_count = [], set(), False, 0
+    clarification_checked = False
     allowed = {'discover_records': ('query', engine.discover_records),
                'trace_lineage': ('root_id', engine.trace_lineage),
                'inspect_service': ('record_id', engine.inspect_service)}
@@ -177,6 +217,38 @@ def investigate(engine, client, user, request, history=None, on_event=None, mcp_
             if not isinstance(outcome, dict) or not isinstance(outcome.get('message'), str):
                 raise ValueError('Invalid final response.')
             if outcome.get('action') == 'clarify':
+                # One evidence check can correct an invented conflict without
+                # treating a clarification as a proposal or bypassing review.
+                if discovered and not clarification_checked and turn < 7:
+                    clarification_checked = True
+                    known, lineage = {}, []
+                    for entry in trace:
+                        value = entry['result']
+                        if entry['tool'] == 'discover_records' and isinstance(value, list):
+                            known.update({r['id']: r for r in value})
+                        elif entry['tool'] == 'trace_lineage' and isinstance(value, dict) and 'records' in value:
+                            known.update({r['id']: r for r in value['records']})
+                            lineage.append({'root': value['root'],
+                                            'descendants_and_root': [r['id'] for r in value['records']],
+                                            'shared_dependencies': value['shared_dependencies']})
+                    facts = {'record_types': [{'id': r['id'], 'kind': r['kind'],
+                                              'protected': r['kind'] in {'paid_booking', 'class_listing'}}
+                                             for r in known.values()], 'lineage': lineage}
+                    messages.append({'role': 'assistant', 'content': message.get('content') or ''})
+                    messages.append({'role': 'user', 'content':
+                        'Application evidence check before asking the customer: recheck your clarification '
+                        'A filtered discovery returning no matches does not prove a record is absent. '
+                        'If discovery has not identified the requested record, call discover_records with '
+                        'query="" to list the authorized catalog, then trace the matching source. '
+                        'against these facts from successful reads. Do not misidentify a queued message as '
+                        'a paid booking. A protected record outside the closure is already kept. '
+                        'If the request clearly selects the root and its descendants and there is no evidenced '
+                        'conflict, propose that scope for independent review and later human approval. '
+                        'Do not ask for execution approval during investigation. If intent is genuinely '
+                        'ambiguous, an exclusion conflicts with the closure, or shared dependencies exist, '
+                        'return a focused clarification. These facts do not override the customer request.\n'
+                        + json.dumps(facts)})
+                    continue
                 return {'action': 'clarify', 'message': outcome['message'], 'trace': trace}
             roots, targets = outcome.get('roots'), outcome.get('targets')
             if outcome.get('action') != 'propose' or not isinstance(roots, list) or not isinstance(targets, list):
@@ -192,25 +264,3 @@ def investigate(engine, client, user, request, history=None, on_event=None, mcp_
             messages.append({'role': 'assistant', 'content': message.get('content') or ''})
             messages.append({'role': 'user', 'content': f'Application validation: {exc}. Correct the plan using read tools, or ask for clarification. No write occurred.'})
     raise ModelError('Investigation reached its turn limit. Refine the scope and retry; no deletion occurred.')
-
-
-def create_judge_system_prompt() -> str:
-    """Create system prompt for judge agent (LLM as judge)."""
-    return """You are a judge that evaluates withdrawal proposals against evidence.
-
-Your role is to:
-1. Review the complete evidence trail from investigation
-2. Check that all proposed deletions are justified by discovered dependencies
-3. Verify that the scope is complete (no orphaned records)
-4. Identify any potential issues or edge cases
-5. Make a final recommendation: APPROVE, REJECT, or CLARIFY
-
-Evaluation criteria:
-- Are all target records actually connected to the root?
-- Are there unexplored branches or shared dependencies?
-- Would deletion leave inconsistent state?
-- Are paid bookings or protected records included?
-
-Report your reasoning clearly and make a definitive recommendation.
-Final output as JSON: {"recommendation": "APPROVE|REJECT|CLARIFY", "reasoning": "..."}
-"""
