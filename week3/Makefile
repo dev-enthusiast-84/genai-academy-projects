@@ -19,31 +19,31 @@ help:
 	@echo "  $(GREEN)make demo-models$(NC) - Show demo with different model combinations"
 	@echo ""
 	@echo "$(YELLOW)APP SHORTCUTS (after make demo is running):$(NC)"
-	@echo "  $(GREEN)make recall$(NC)     - Open Recall Dashboard (8501)"
-	@echo "  $(GREEN)make portal$(NC)     - Open Club Portal (8101)"
-	@echo "  $(GREEN)make booking$(NC)    - Open Class Booking (8102)"
-	@echo "  $(GREEN)make offers$(NC)     - Open Member Offers (8103)"
+	@echo "  $(GREEN)make recall$(NC)     - Open Recall Dashboard"
+	@echo "  $(GREEN)make portal$(NC)     - Open Club Portal"
+	@echo "  $(GREEN)make booking$(NC)    - Open Class Booking"
+	@echo "  $(GREEN)make offers$(NC)     - Open Member Offers"
 	@echo "  $(GREEN)make open-all$(NC)   - Open all 4 apps in browser"
 	@echo ""
 	@echo "$(YELLOW)MANAGEMENT:$(NC)"
 	@echo "  $(GREEN)make llm$(NC)        - Start only LiteLLM proxy"
 	@echo "  $(GREEN)make app$(NC)        - Start only Recall app"
-	@echo "  $(GREEN)make stop$(NC)       - Stop all processes"
-	@echo "  $(GREEN)make kill$(NC)       - Force kill all processes"
+	@echo "  $(GREEN)make stop$(NC)       - Stop all processes gracefully"
+	@echo "  $(GREEN)make kill$(NC)       - Force kill all processes & free ports"
 	@echo "  $(GREEN)make logs$(NC)       - Show running processes"
 	@echo "  $(GREEN)make clean$(NC)      - Clean up runtime data and caches"
 	@echo "  $(GREEN)make reset$(NC)      - Reset demo data (fresh start)"
 	@echo ""
-	@echo "$(BLUE)ENDPOINTS (all 4 apps):$(NC)"
+	@echo "$(BLUE)ENDPOINTS:$(NC)"
 	@echo "  🎯 Recall Dashboard:    http://127.0.0.1:8501"
-	@echo "  👥 Club Portal:         http://127.0.0.1:8101"
+	@echo "  👥 Start Your Journey:  http://127.0.0.1:8101"
 	@echo "  📚 Class Booking:       http://127.0.0.1:8102"
 	@echo "  🎁 Member Offers:       http://127.0.0.1:8103"
 	@echo "  🧠 LiteLLM Proxy:       http://127.0.0.1:4000"
 	@echo ""
 	@echo "$(BLUE)WORKFLOW:$(NC)"
 	@echo "  1. Run $(GREEN)make demo$(NC) to start everything"
-	@echo "  2. Open http://127.0.0.1:8501 in browser"
+	@echo "  2. Open http://recall.local in browser (or http://127.0.0.1:8501)"
 	@echo "  3. Use sidebar to select models:"
 	@echo "     • Investigator (phi/mistral/neural-chat)"
 	@echo "     • Scope Reviewer (orca-mini/mixtral)"
@@ -87,13 +87,22 @@ stop:
 	fi
 	@pkill -f "streamlit run app.py" 2>/dev/null || true
 	@pkill -f "withdrawal.service_app" 2>/dev/null || true
+	@pkill -f "reverse_proxy.py" 2>/dev/null || true
 	@echo "$(GREEN)✓ All processes stopped$(NC)"
 
 kill:
 	@echo "$(RED)Force killing all processes...$(NC)"
-	@pkill -9 -f litellm 2>/dev/null || true
-	@pkill -9 -f streamlit 2>/dev/null || true
-	@pkill -9 -f withdrawal 2>/dev/null || true
+	@pkill -9 -f "litellm" 2>/dev/null || true
+	@pkill -9 -f "streamlit" 2>/dev/null || true
+	@pkill -9 -f "withdrawal" 2>/dev/null || true
+	@pkill -9 -f "flask_service" 2>/dev/null || true
+	@pkill -9 -f "run_demo" 2>/dev/null || true
+	@pkill -9 -f "python.*app.py" 2>/dev/null || true
+	@pkill -9 python3 2>/dev/null || true
+	@pkill -9 python 2>/dev/null || true
+	@sleep 2
+	@pkill -9 -9 python 2>/dev/null || true
+	@sleep 3
 	@rm -f .litellm.pid .litellm.log
 	@echo "$(GREEN)✓ All processes killed$(NC)"
 
@@ -145,7 +154,7 @@ showcase:
 	@echo "$(BLUE)╚════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(YELLOW)STEP 1: GIVE CONSENT$(NC)"
-	@echo "  → Open: $(BLUE)http://127.0.0.1:8101$(NC) (Club Portal)"
+	@echo "  → Open: $(BLUE)http://127.0.0.1:8101$(NC) (Start Your Journey)"
 	@echo "  → Click 'Give Consent' button"
 	@echo "  → Watch data get shared to other apps"
 	@echo ""
@@ -176,7 +185,7 @@ showcase:
 	@echo "  → Watch deletion happen in real-time"
 	@echo ""
 	@echo "$(YELLOW)STEP 6: VERIFY DELETION$(NC)"
-	@echo "  → Check other apps (8101, 8102, 8103)"
+	@echo "  → Check other apps (fitness-start.local, class-booking.local, member-offers.local)"
 	@echo "  → Your data is actually gone!"
 	@echo "  → Download verification receipt"
 	@echo ""
@@ -192,7 +201,7 @@ recall:
 	@open http://127.0.0.1:8501 || xdg-open http://127.0.0.1:8501 || echo "Open browser to: http://127.0.0.1:8501"
 
 portal:
-	@echo "Opening Club Portal..."
+	@echo "Opening Start Your Journey..."
 	@open http://127.0.0.1:8101 || xdg-open http://127.0.0.1:8101 || echo "Open browser to: http://127.0.0.1:8101"
 
 booking:
@@ -209,7 +218,7 @@ open-all:
 	@$(MAKE) portal > /dev/null 2>&1 &
 	@$(MAKE) booking > /dev/null 2>&1 &
 	@$(MAKE) offers > /dev/null 2>&1 &
-	@echo "$(GREEN)✓ Opening Recall (8501), Club Portal (8101), Class Booking (8102), Member Offers (8103)$(NC)"
+	@echo "$(GREEN)✓ Opening Recall, Club Portal, Class Booking, Member Offers$(NC)"
 
 demo-models:
 	@echo ""

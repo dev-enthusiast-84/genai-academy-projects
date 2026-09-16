@@ -14,7 +14,7 @@ from withdrawal.notifications import notification_settings, notify_withdrawal_st
 
 ROOT = Path(__file__).parent
 USER = 'U1'
-FIXTURE = json.loads((ROOT / 'data/fitness.json').read_text())
+FIXTURE = json.loads((ROOT / 'site/fitness.json').read_text())
 st.set_page_config(page_title='Recall — consent has an undo button', page_icon='↩', layout='wide', initial_sidebar_state='collapsed')
 st.markdown('''<style>
 :root{--ink:#302923;--accent:#a33f26;--muted:#6d6056;--line:#ded3c6;--paper:#faf7f2}
@@ -135,6 +135,199 @@ st.markdown('<div class="brand"><span class="brand-symbol">↩</span> Recall <sp
 st.markdown('<div class="kicker">Your information. Your decision.</div>', unsafe_allow_html=True)
 st.title('You deleted the form.\nWho still remembers?')
 st.markdown('<p class="lede">Your club questionnaire can live on as class preferences, an audience label, and a queued offer. Follow the evidence and take back your consent.</p>', unsafe_allow_html=True)
+
+# Workflow guide with actions
+st.markdown('### 🔄 Your Withdrawal Journey')
+
+# Get current consent state early
+consent_state = engine.consent.get("state", "not_granted")
+
+workflow_cols = st.columns(3)
+with workflow_cols[0]:
+    st.markdown('<div style="background: #e8f4f8; padding: 12px; border-radius: 6px; border-left: 3px solid #0066cc;"><strong>1 - Give consent</strong><br><small>Share interests in Club Portal.</small></div>', unsafe_allow_html=True)
+
+with workflow_cols[1]:
+    st.markdown('<div style="background: #fff4e6; padding: 12px; border-radius: 6px; border-left: 3px solid #ff9900;"><strong>2 - Delete the form</strong><br><small>See other apps keep using it.</small></div>', unsafe_allow_html=True)
+
+with workflow_cols[2]:
+    st.markdown('<div style="background: #f0e6ff; padding: 12px; border-radius: 6px; border-left: 3px solid #9933ff;"><strong>3 - Ask Recall</strong><br><small>Approve withdrawal across all apps.</small></div>', unsafe_allow_html=True)
+
+# Workflow steps with expected outcomes
+st.markdown('### 🔄 Your Privacy Journey')
+
+journey_cols = st.columns(3)
+with journey_cols[0]:
+    step_bg = '#e3f2fd' if consent_state != "active" else '#c8e6c9'
+    step_border = '#0066cc' if consent_state != "active" else '#2e7d32'
+    step_marker = '→' if consent_state == "active" else '1️⃣'
+    st.markdown(f'''
+    <div style="background:{step_bg}; padding:14px; border-left:4px solid {step_border}; border-radius:6px;">
+        <strong style="color:#333;">{step_marker} Give Consent</strong><br>
+        <small style="color:#666;">Share your questionnaire with other services</small>
+        {f'<div style="margin-top:8px; color:#1b5e20; font-size:11px;"><strong>✓ Active Now</strong></div>' if consent_state == "active" else ''}
+    </div>
+    ''', unsafe_allow_html=True)
+
+with journey_cols[1]:
+    step_enabled = consent_state == "active"
+    step_bg = '#fff3e0' if not step_enabled else '#fff9e6'
+    step_border = '#999' if not step_enabled else '#ff9900'
+    step_marker = '2️⃣' if not step_enabled else '→'
+    st.markdown(f'''
+    <div style="background:{step_bg}; padding:14px; border-left:4px solid {step_border}; border-radius:6px; opacity:{'0.6' if not step_enabled else '1'};">
+        <strong style="color:#333;">{step_marker} See Personalization</strong><br>
+        <small style="color:#666;">Apps use your data to personalize</small>
+        {f'<div style="margin-top:8px; color:#e65100; font-size:11px;"><strong>✓ Your data flowing now</strong></div>' if step_enabled else '<div style="margin-top:8px; color:#999; font-size:11px;">Give consent first</div>'}
+    </div>
+    ''', unsafe_allow_html=True)
+
+with journey_cols[2]:
+    step_enabled = consent_state == "active"
+    step_bg = '#f3e5f5' if not step_enabled else '#fce4ec'
+    step_border = '#999' if not step_enabled else '#7b1fa2'
+    step_marker = '3️⃣' if not step_enabled else '→'
+    st.markdown(f'''
+    <div style="background:{step_bg}; padding:14px; border-left:4px solid {step_border}; border-radius:6px; opacity:{'0.6' if not step_enabled else '1'};">
+        <strong style="color:#333;">{step_marker} Withdraw & Delete</strong><br>
+        <small style="color:#666;">Take back control, delete everywhere</small>
+        {f'<div style="margin-top:8px; color:#7b1fa2; font-size:11px;"><strong>✓ Ready to withdraw</strong></div>' if step_enabled else '<div style="margin-top:8px; color:#999; font-size:11px;">After giving consent</div>'}
+    </div>
+    ''', unsafe_allow_html=True)
+
+st.markdown('---')
+
+# Consent actions
+st.markdown('### ⚡ Actions')
+
+action_col1, action_col2, action_col3 = st.columns(3)
+with action_col1:
+    if consent_state != "active":
+        if st.button('✅ Give Consent to Share', key='btn_consent', help='Enable data sharing', use_container_width=True):
+            try:
+                engine.grant_consent(USER, True)
+                engine._save_json(engine.consent_file, engine.consent)
+                st.success('✅ Consent granted! Watch the data flow below →')
+                st.rerun()
+            except Exception as e:
+                st.error(f'⚠️ {str(e)} → Click "Reset Demo" first')
+    else:
+        if st.button('🔐 Withdraw Consent', key='btn_withdraw', help='Stop sharing', use_container_width=True):
+            try:
+                engine.withdraw_consent(USER)
+                st.info('🔐 Consent withdrawn - click Reset to start over')
+                st.rerun()
+            except Exception as e:
+                st.error(f'Error: {str(e)}')
+
+with action_col2:
+    if st.button('🗑️ Delete Records', key='btn_delete', help='Mark for deletion', use_container_width=True):
+        if 'D1' in engine.catalog:
+            engine.catalog['D1']['deleted'] = True
+            engine._save_json(engine.catalog_file, engine.catalog)
+            st.warning('🗑️ Records marked for deletion')
+            st.rerun()
+
+with action_col3:
+    if st.button('🔄 Reset Demo', key='btn_reset_action', help='Start over', use_container_width=True):
+        engine.consent = {"state": "not_granted"}
+        engine._save_json(engine.consent_file, engine.consent)
+        st.info('🔄 Demo reset')
+        st.rerun()
+
+st.divider()
+
+# Data flow visualization
+st.markdown('### 📊 Data Flow & Sharing Status')
+
+if consent_state == "active":
+    # Get derived records to show data flow
+    source_records = [r for r in engine.catalog.values() if r.get('user_id') == USER and r.get('consent_root') == 'D1' and r.get('type') == 'source_document']
+    derived_class = [r for r in engine.catalog.values() if r.get('user_id') == USER and r.get('service') == 'search' and r.get('consent_root') == 'D1']
+    derived_offers = [r for r in engine.catalog.values() if r.get('user_id') == USER and r.get('service') == 'personalization' and r.get('consent_root') == 'D1']
+
+    st.markdown('''
+    <div style="background: linear-gradient(135deg, #e8f5e9 0%, #fff3e0 100%); padding: 16px; border-radius: 8px; border-left: 5px solid #4caf50; margin: 12px 0;">
+        <strong style="color:#2e7d32; font-size: 14px;">✅ Data Sharing Active</strong><br>
+        <small style="color:#555;">Your preferences from Start Your Journey are enabling personalization in other apps. Here's what's being shared:</small>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    flow_col1, flow_col2, flow_col3, flow_col4 = st.columns([2, 1, 1.5, 1.5])
+
+    with flow_col1:
+        st.markdown('**🔵 Source** (You shared this)')
+        if source_records:
+            for rec in source_records:
+                st.markdown(f'''
+                <div style="background:#e8f5e9; padding:10px; border-left:3px solid #2e7d32; margin:8px 0; border-radius:4px; font-size:11px;">
+                    <strong style="color:#1b5e20;">{rec.get("title", "")}</strong><br>
+                    <small style="color:#558b2f;">{rec.get("content", "")[:50]}...</small>
+                </div>
+                ''', unsafe_allow_html=True)
+
+    with flow_col2:
+        st.markdown('')
+        st.markdown('<div style="text-align:center; color:#4caf50; font-size:20px; margin-top:20px;">→</div>', unsafe_allow_html=True)
+
+    with flow_col3:
+        st.markdown('**🟡 Class Booking** (Using your preferences)')
+        if derived_class:
+            count = len([r for r in derived_class if r.get('consent_root') == 'D1'])
+            st.markdown(f'<div style="background:#fff3e0; padding:10px; border-left:3px solid #f57f17; border-radius:4px; font-size:11px; color:#e65100;"><strong>📥 {count} derived record(s)</strong><br>Recommendations based on your interests</div>', unsafe_allow_html=True)
+
+    with flow_col4:
+        st.markdown('**🟣 Member Offers** (Personalized for you)')
+        if derived_offers:
+            count = len([r for r in derived_offers if r.get('consent_root') == 'D1'])
+            st.markdown(f'<div style="background:#f3e5f5; padding:10px; border-left:3px solid #7b1fa2; border-radius:4px; font-size:11px; color:#4a148c;"><strong>📥 {count} derived record(s)</strong><br>Targeted offers & audience</div>', unsafe_allow_html=True)
+
+else:
+    st.markdown('''
+    <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; border-left: 5px solid #999; margin: 12px 0;">
+        <strong style="color:#666;">⏸️ Data Sharing Paused</strong><br>
+        <small style="color:#777;">Your data isn't being shared yet. Click <strong>Give Consent to Share</strong> to enable data flow.</small>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    st.markdown('<div style="background: #f9f9f9; padding: 14px; border-radius: 6px; border-left: 4px solid #ff9900; margin: 12px 0;"><strong>📋 What happens when you give consent:</strong></div>', unsafe_allow_html=True)
+
+    st.markdown('''
+    **Step 1:** You share your fitness interests (e.g., "evening yoga")
+
+    **Step 2:** We transform it into:
+    - 📚 **Class recommendations** — "Tuesday evening yoga at 7pm"
+    - 🎁 **Personalized offers** — "50% off evening wellness classes"
+
+    **Step 3:** Both apps use your preferences instantly
+    - You see better recommendations
+    - You get relevant offers
+
+    **You stay in control:** Withdraw consent anytime to stop data sharing
+    ''')
+
+    st.info('💡 **Try it now:** Click "Give Consent to Share" to watch the data flow activate!')
+
+st.markdown('---')
+st.markdown('### 🔗 App Links')
+link_col1, link_col2, link_col3 = st.columns(3)
+
+with link_col1:
+    st.markdown('**Start Your Journey**')
+    st.link_button('👥 Open App', 'http://127.0.0.1:8101', use_container_width=True)
+    st.caption('Give consent & share your questionnaire')
+
+with link_col2:
+    st.markdown('**Class Booking**')
+    st.link_button('📚 Open App', 'http://127.0.0.1:8102', use_container_width=True)
+    st.caption('See personalized class recommendations')
+
+with link_col3:
+    st.markdown('**Member Offers**')
+    st.link_button('🎁 Open App', 'http://127.0.0.1:8103', use_container_width=True)
+    st.caption('View targeted offers for you')
+
+st.caption('💡 **Smart dashboard** - Shows live records from each service. Click "Open Full View" for detailed interface. Auto-updates every interaction.')
+
 if mode=='Guided rehearsal':
     st.warning('Guided rehearsal — the investigation is scripted. Deletions, recovery, verification, and replay protection use the real local stores.')
 else:

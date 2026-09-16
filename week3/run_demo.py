@@ -20,8 +20,17 @@ ROOT = Path(__file__).resolve().parent
 
 
 def available(port):
-    with socket.socket() as sock:
-        sock.bind(('127.0.0.1', port))
+    """Check if port is available, retry a few times."""
+    for attempt in range(5):
+        try:
+            with socket.socket() as sock:
+                sock.bind(('127.0.0.1', port))
+            return
+        except OSError:
+            if attempt < 4:
+                time.sleep(0.2)
+            else:
+                raise RuntimeError(f'Port {port} is still in use after retries')
 
 
 def main():
@@ -56,7 +65,7 @@ def main():
         for port in [*PORTS.values(), args.dashboard_port, *([mcp_port] if use_mcp else [])]:
             available(port)
         for service in PORTS:
-            children.append(subprocess.Popen([sys.executable, '-m', 'withdrawal.flask_service', service], cwd=ROOT, env=env))
+            children.append(subprocess.Popen([sys.executable, '-m', 'withdrawal.flask_service', service], cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
         deadline = time.monotonic() + 20
         pending = set(PORTS)
         with httpx.Client(trust_env=False, timeout=.5) as client:
@@ -74,10 +83,10 @@ def main():
                     raise RuntimeError('Applications did not become ready: ' + ', '.join(sorted(pending)))
                 if pending:
                     time.sleep(.1)
-        engine = Engine(args.directory / 'recall', HttpServices(token=token))
+        engine = Engine(args.directory / 'recall')
         try:
-            if args.reset or not engine.db.execute('SELECT 1 FROM catalog').fetchone():
-                engine.seed(json.loads((ROOT / 'data/fitness.json').read_text()))
+            if args.reset or not engine.catalog:
+                engine.seed(json.loads((ROOT / 'site/fitness.json').read_text()))
         finally:
             engine.close()
         if use_mcp:
@@ -97,9 +106,12 @@ def main():
         children.append(subprocess.Popen([sys.executable, '-m', 'streamlit', 'run', 'app.py',
                         '--server.address', '127.0.0.1', '--server.port', str(args.dashboard_port),
                         '--server.headless', 'true'], cwd=ROOT, env=env))
-        print(f'\nRecall: http://127.0.0.1:{args.dashboard_port}\nStart your journey: http://127.0.0.1:8101\n'
-              'Class Booking: http://127.0.0.1:8102\nMember Offers: http://127.0.0.1:8103\n'
-              'Ctrl+C stops processes; saved state is preserved. Use --reset for a fresh journey.', flush=True)
+        print(f'\n=== Services Available ===\n'
+              f'🎯 Recall Dashboard: http://127.0.0.1:{args.dashboard_port}\n'
+              f'👥 Start Your Journey: http://127.0.0.1:8101\n'
+              f'📚 Class Booking: http://127.0.0.1:8102\n'
+              f'🎁 Member Offers: http://127.0.0.1:8103\n\n'
+              f'Ctrl+C stops processes; saved state is preserved. Use --reset for a fresh journey.', flush=True)
         reported = set()
         while children[-1].poll() is None:
             for index, child in enumerate(children[:-1]):
