@@ -20,7 +20,7 @@ class ModelOption:
 
 
 MODEL_CATALOG = [
-    ModelOption("openai", "OpenAI: GPT-4", "gpt-4", "OPENAI_API_KEY", "Fast and reliable. Requires OpenAI API key."),
+    ModelOption("openai", "OpenAI: GPT-4 Turbo", "gpt-4-turbo", "OPENAI_API_KEY", "Fast and reliable. Requires OpenAI API key."),
     ModelOption("openai", "OpenAI: GPT-4o mini", "gpt-4o-mini", "OPENAI_API_KEY", "Lightweight option for faster inference."),
     ModelOption("google", "Google: Gemini 2.0 Flash", "gemini-2.0-flash", "GOOGLE_API_KEY", "Fast model. Requires Google AI API key."),
     ModelOption("anthropic", "Anthropic: Claude Sonnet", "claude-3-5-sonnet-20241022", "ANTHROPIC_API_KEY", "Use if you have Anthropic API access."),
@@ -57,13 +57,15 @@ def get_api_key(option: ModelOption, temporary_key: str = "") -> tuple[str, str]
 def litellm_completion(model: str, messages: list[dict[str, str]], api_key: str, response_format: dict[str, Any] | None = None) -> str:
     from litellm import completion
 
+    supports_json = any(x in model.lower() for x in ["gpt-4-turbo", "gpt-4o", "claude-3-5", "gemini"])
+
     kwargs: dict[str, Any] = {
         "model": model,
         "messages": messages,
         "api_key": api_key,
         "temperature": 0,
     }
-    if response_format:
+    if response_format and supports_json:
         kwargs["response_format"] = response_format
     response = completion(**kwargs)
     return response.choices[0].message.content or ""
