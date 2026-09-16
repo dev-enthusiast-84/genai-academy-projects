@@ -16,7 +16,7 @@ The demo corpus is fictional. It includes candidate documents, job descriptions,
 - Produces Supported, Partially supported, or No evidence found rows.
 - Shows citation excerpts and source IDs.
 - Lets the user download a Markdown assessment.
-- Lets the user select a model/provider through LiteLLM, with OpenRouter as the recommended route.
+- Lets the user select a model/provider through LiteLLM: OpenAI, Google Gemini, Anthropic Claude, or Groq.
 - Runs without an API key using deterministic local assessment, so retrieval and UI can be tested immediately.
 
 ## Retrieval
@@ -25,26 +25,42 @@ The submitted MVP uses local BM25 retrieval over the demo corpus so it can run i
 
 ## Run Locally
 
+Requires `uv` for Python dependency management. [Install uv](https://docs.astral.sh/uv/getting-started/) if you don't have it.
+
 From the repository root:
 
 ```bash
-python3 -m venv week2/almost-qualified/.venv
-source week2/almost-qualified/.venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r week2/almost-qualified/requirements.txt
-python week2/almost-qualified/ingest.py --corpus demo
-python -m streamlit run week2/almost-qualified/app.py
+cd week2/almost-qualified
+uv sync
+uv run python ingest.py --corpus demo
+uv run streamlit run app.py
 ```
 
-To use an LLM-backed assessment, add secrets through environment variables or `.streamlit/secrets.toml`:
+### Configure API Keys
+
+Copy the secrets template and add your API keys:
+
+```bash
+cp .streamlit/secrets.example.toml .streamlit/secrets.toml
+```
+
+Edit `.streamlit/secrets.toml` with your credentials:
 
 ```toml
-DEFAULT_LLM_PROVIDER = "openrouter"
-DEFAULT_LLM_MODEL = "openrouter/openai/gpt-5-mini"
-OPENROUTER_API_KEY = "replace-me"
+# OpenAI - https://platform.openai.com/api-keys
+OPENAI_API_KEY = "sk-..."
+
+# Google Gemini - https://ai.google.dev/
+GOOGLE_API_KEY = "..."
+
+# Anthropic Claude - https://console.anthropic.com/
+ANTHROPIC_API_KEY = "sk-ant-..."
+
+# Groq - https://console.groq.com/
+GROQ_API_KEY = "..."
 ```
 
-The sidebar also accepts a temporary local API key. It stays in the browser session and is not written to disk.
+The sidebar accepts temporary API keys too. They stay in the browser session and are not written to disk.
 
 ## Evaluation
 
@@ -60,11 +76,11 @@ The evaluation writes `submission_artifacts/evaluation_results.json`.
 
 1. Push the repository to GitHub.
 2. Deploy on Streamlit Community Cloud with entrypoint `week2/almost-qualified/app.py`.
-3. Add `OPENROUTER_API_KEY`, `DEFAULT_LLM_PROVIDER`, and `DEFAULT_LLM_MODEL` in Streamlit secrets.
+3. Add API keys in Streamlit secrets (`OPENAI_API_KEY`, `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, or `GROQ_API_KEY`).
 4. Keep `APP_MODE = "demo"` for the public version.
-5. Run one supported case, one partial case, and one missing-evidence case before sharing.
+5. Test one supported case, one partial case, and one missing-evidence case before sharing.
 
-The public demo can run without a model key if "Use model assessment" is off. Add `OPENROUTER_API_KEY` for LLM-backed assessment.
+The public demo runs without API keys if "Use model assessment" is disabled. Add API keys for LLM-backed assessment.
 
 ## Files
 
