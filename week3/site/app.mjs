@@ -33,7 +33,7 @@ function renderMap(){
     });
     group.forEach((r,i)=>positions[r.id]={x:22+column*287,y:group.length===1?150:25+i*(260/Math.max(1,group.length-1))});
   }
-  let svg='<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#aebfe8"/></marker></defs>';
+  let svg='<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#b8a797"/></marker></defs>';
   for(const edge of graph.edges){
     const a=positions[edge.source],b=positions[edge.target];if(!a||!b)continue;
     const gone=engine.inspect(edge.target).state==='absent';

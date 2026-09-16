@@ -7,6 +7,7 @@ This repository contains project work for the GenAI Academy.
 | Week | Project | Deployment URL | Submission Docs |
 | --- | --- | --- | --- |
 | Week 1 | [Subscription Reality Check](week1/subscription-reality-check) | [Live app](https://subscription-reality-check-bmq8rygqkxg9qffdwg2upf.streamlit.app) | Pending Google Drive link |
+| Week 2 | [Almost Qualified](week2/almost-qualified) | [Showcase and deployment](https://dev-enthusiast-84.github.io/genai-academy-projects/almost-qualified/) | [Pitch deck](https://dev-enthusiast-84.github.io/genai-academy-projects/almost-qualified/pitch_deck.html) · [Architecture](week2/almost-qualified/docs/ARCHITECTURE.md) |
 
 ## GitHub Pages Showcase
 
