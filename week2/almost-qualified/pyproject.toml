@@ -1,0 +1,8 @@
+[project]
+name = "almost-qualified"
+version = "0.1.0"
+description = ""
+dependencies = [
+    "streamlit>=1.36,<2",
+    "litellm>=1.74,<2",
+]
