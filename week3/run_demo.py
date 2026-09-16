@@ -56,8 +56,7 @@ def main():
         for port in [*PORTS.values(), args.dashboard_port, *([mcp_port] if use_mcp else [])]:
             available(port)
         for service in PORTS:
-            children.append(subprocess.Popen([sys.executable, '-m', 'withdrawal.service_app', service,
-                            '--directory', str(args.directory / 'applications')], cwd=ROOT, env=env))
+            children.append(subprocess.Popen([sys.executable, '-m', 'withdrawal.flask_service', service], cwd=ROOT, env=env))
         deadline = time.monotonic() + 20
         pending = set(PORTS)
         with httpx.Client(trust_env=False, timeout=.5) as client:
