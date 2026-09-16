@@ -33,7 +33,6 @@ def main():
     args = parser.parse_args()
     args.directory = args.directory.resolve()
     args.directory.mkdir(parents=True, exist_ok=True)
-    urls = {name: f'http://127.0.0.1:{port}' for name, port in PORTS.items()}
     token = secrets.token_urlsafe(32)
     file_env = {}
     dotenv = ROOT / '.env'
@@ -43,6 +42,7 @@ def main():
                 key, value = line.split('=', 1)
                 file_env[key.strip()] = value.strip().strip('"').strip("'")
     env = dict(file_env, **os.environ)
+    urls = {name: f'http://127.0.0.1:{port}' for name, port in PORTS.items()}
     env.update(RECALL_SERVICE_URLS=json.dumps(urls), RECALL_SERVICE_TOKEN=token,
                RECALL_DASHBOARD_URL=f'http://127.0.0.1:{args.dashboard_port}',
                RECALL_DATA_DIR=str(args.directory / 'recall'))
@@ -74,7 +74,7 @@ def main():
                     raise RuntimeError('Applications did not become ready: ' + ', '.join(sorted(pending)))
                 if pending:
                     time.sleep(.1)
-        engine = Engine(args.directory / 'recall', HttpServices(urls, token))
+        engine = Engine(args.directory / 'recall', HttpServices(token=token))
         try:
             if args.reset or not engine.db.execute('SELECT 1 FROM catalog').fetchone():
                 engine.seed(json.loads((ROOT / 'data/fitness.json').read_text()))
