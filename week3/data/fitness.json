@@ -1,0 +1,163 @@
+{
+  "synthetic": true,
+  "records": [
+    {
+      "id": "D1",
+      "service": "documents",
+      "type": "source_document",
+      "title": "Fitness interests questionnaire",
+      "content": "Avery enjoys evening yoga and prefers classes after 6 pm.",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": "D1"
+    },
+    {
+      "id": "T1",
+      "service": "documents",
+      "type": "extracted_text",
+      "title": "Normalized fitness interests",
+      "content": "evening yoga; after 6 pm",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": "D1"
+    },
+    {
+      "id": "V1",
+      "service": "search",
+      "type": "copied_preference",
+      "title": "Class discovery interests",
+      "content": "evening yoga",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": "D1"
+    },
+    {
+      "id": "V2",
+      "service": "search",
+      "type": "recommendation_cache",
+      "title": "Recommended for you: evening yoga",
+      "content": "Try Wednesday evening yoga at 7 pm.",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": "D1"
+    },
+    {
+      "id": "P1",
+      "service": "personalization",
+      "type": "copied_preference",
+      "title": "Offer personalization interests",
+      "content": "evening yoga",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": "D1"
+    },
+    {
+      "id": "C1",
+      "service": "personalization",
+      "type": "audience_membership",
+      "title": "Evening wellness audience",
+      "content": "Members interested in evening yoga.",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": "D1"
+    },
+    {
+      "id": "Q1",
+      "service": "personalization",
+      "type": "queued_message",
+      "title": "Your evening yoga invitation",
+      "content": "Avery, enjoy a complimentary evening yoga taster this Thursday.",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": "D1"
+    },
+    {
+      "id": "B1",
+      "service": "search",
+      "type": "paid_booking",
+      "title": "Your confirmed Saturday strength class",
+      "content": "Saturday 10 am \u00b7 Paid \u00b7 Booking confirmed",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": null
+    },
+    {
+      "id": "D2",
+      "service": "documents",
+      "type": "source_document",
+      "title": "Membership contact card",
+      "content": "Avery Example \u00b7 Active club membership",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": null
+    },
+    {
+      "id": "V3",
+      "service": "search",
+      "type": "class_listing",
+      "title": "Explore all club classes",
+      "content": "Strength, dance and mobility classes open to every member.",
+      "version": 1,
+      "user_id": "U1",
+      "consent_root": null
+    },
+    {
+      "id": "D3",
+      "service": "documents",
+      "type": "source_document",
+      "title": "Another member questionnaire",
+      "content": "Jordan enjoys evening yoga.",
+      "version": 1,
+      "user_id": "U2",
+      "consent_root": null
+    },
+    {
+      "id": "V4",
+      "service": "search",
+      "type": "copied_preference",
+      "title": "Another member interests",
+      "content": "evening yoga",
+      "version": 1,
+      "user_id": "U2",
+      "consent_root": null
+    }
+  ],
+  "lineage": [
+    {
+      "source": "D1",
+      "target": "T1",
+      "evidence_id": "EV-D1-T1"
+    },
+    {
+      "source": "T1",
+      "target": "V1",
+      "evidence_id": "EV-T1-V1"
+    },
+    {
+      "source": "V1",
+      "target": "V2",
+      "evidence_id": "EV-V1-V2"
+    },
+    {
+      "source": "T1",
+      "target": "P1",
+      "evidence_id": "EV-T1-P1"
+    },
+    {
+      "source": "P1",
+      "target": "C1",
+      "evidence_id": "EV-P1-C1"
+    },
+    {
+      "source": "C1",
+      "target": "Q1",
+      "evidence_id": "EV-C1-Q1"
+    },
+    {
+      "source": "D3",
+      "target": "V4",
+      "evidence_id": "EV-D3-V4"
+    }
+  ],
+  "scenario": "fitness"
+}

@@ -4,6 +4,8 @@ A privacy-first demonstration of data withdrawal consent management using LLM-po
 
 **Consent has an undo button** — Withdraw your data and verify it's actually gone.
 
+Start the four connected apps with `./demo.sh` (stop an older demo with Ctrl+C first). The current workflow view is preserved; see [workflow recovery and verification](docs/RECOVERY.md).
+
 ---
 
 ## Quick Start

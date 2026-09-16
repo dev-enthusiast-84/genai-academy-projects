@@ -1,110 +1,59 @@
-"""MCP (Model Context Protocol) client for calling withdrawal tools."""
-
+"""Synchronous adapter over the optional official MCP streamable HTTP client."""
+import asyncio
 import json
-from typing import Dict, List, Any, Optional
+from urllib.parse import urlparse
+from .core import BoundaryError
+
+READS = {'discover_records', 'trace_lineage', 'inspect_service'}
 
 
-class MCPClient:
-    """Client for calling MCP server tools."""
+class MCPReads:
+    def __init__(self, url):
+        parsed = urlparse(url)
+        if parsed.scheme != 'http' or parsed.hostname not in {'127.0.0.1', 'localhost', '::1'} or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise BoundaryError('The synthetic MCP endpoint must be a local HTTP URL without credentials or query strings.')
+        self.url = url
 
-    def __init__(self, base_url: str = "http://127.0.0.1:8104"):
-        """Initialize MCP client.
-
-        Args:
-            base_url: MCP server URL
-        """
-        self.base_url = base_url.rstrip("/")
-
-    def get_tools(self) -> List[Dict[str, Any]]:
-        """Get available tools from server.
-
-        Returns:
-            List of tool definitions
-        """
+    async def _run(self, name=None, arguments=None):
         try:
-            import requests
-            response = requests.get(f"{self.base_url}/mcp/tools", timeout=5)
-            response.raise_for_status()
-            return response.json().get("tools", [])
-        except Exception as e:
-            print(f"Error fetching tools: {e}")
-            return []
-
-    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
-        """Call a tool on the server.
-
-        Args:
-            tool_name: Name of tool to call
-            arguments: Tool arguments
-
-        Returns:
-            Tool result
-        """
-        try:
-            import aiohttp
-
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.base_url}/mcp/call",
-                    params={"tool_name": tool_name},
-                    json=arguments,
-                    timeout=aiohttp.ClientTimeout(total=30),
-                ) as response:
-                    if response.status != 200:
-                        error_text = await response.text()
-                        return {"error": f"HTTP {response.status}: {error_text}"}
-                    return await response.json()
+            from mcp import ClientSession
+            from mcp.client.streamable_http import streamablehttp_client
         except ImportError:
-            # Fallback to sync
-            return self.call_tool_sync(tool_name, arguments)
-        except Exception as e:
-            return {"error": str(e)}
+            raise BoundaryError('Install requirements-mcp.txt before selecting MCP transport.') from None
+        async with streamablehttp_client(self.url) as (read, write, _):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                if name is None:
+                    result = await session.list_tools()
+                    return [tool.name for tool in result.tools]
+                result = await session.call_tool(name, arguments)
+                if result.isError:
+                    raise BoundaryError('MCP rejected the scoped read.')
+                payload = result.structuredContent
+                if payload is None:
+                    text = next((part.text for part in result.content if part.type == 'text'), '')
+                    payload = json.loads(text)
+                return payload
 
-    def call_tool_sync(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
-        """Call a tool synchronously.
-
-        Args:
-            tool_name: Name of tool to call
-            arguments: Tool arguments
-
-        Returns:
-            Tool result
-        """
+    def _sync(self, name=None, arguments=None):
         try:
-            import requests
-            response = requests.post(
-                f"{self.base_url}/mcp/call",
-                params={"tool_name": tool_name},
-                json=arguments,
-                timeout=30,
-            )
-            if response.status_code != 200:
-                return {"error": f"HTTP {response.status_code}: {response.text}"}
-            return response.json()
-        except Exception as e:
-            return {"error": str(e)}
-
-    def health_check(self) -> bool:
-        """Check if MCP server is healthy.
-
-        Returns:
-            True if server is up
-        """
-        try:
-            import requests
-            response = requests.get(f"{self.base_url}/health", timeout=5)
-            return response.status_code == 200
+            return asyncio.run(asyncio.wait_for(self._run(name, arguments), timeout=20))
+        except BoundaryError:
+            raise
         except Exception:
-            return False
+            raise BoundaryError('MCP read unavailable or returned invalid data. No deletion occurred.') from None
 
+    def list_tools(self):
+        return self._sync()
 
-def create_mcp_client(base_url: str = "http://127.0.0.1:8104") -> MCPClient:
-    """Create MCP client.
-
-    Args:
-        base_url: MCP server URL
-
-    Returns:
-        MCPClient instance
-    """
-    return MCPClient(base_url)
+    def call_tool(self, name, arguments):
+        if name not in READS:
+            raise BoundaryError('Only investigator read tools are allowed through this adapter.')
+        result = self._sync(name, arguments)
+        if name == 'discover_records':
+            if not isinstance(result, dict) or not isinstance(result.get('records'), list):
+                raise BoundaryError('MCP discovery returned invalid metadata.')
+            return result['records']
+        if not isinstance(result, dict):
+            raise BoundaryError('MCP read returned invalid metadata.')
+        return result

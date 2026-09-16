@@ -16,57 +16,7 @@ ROOT = Path(__file__).parent
 USER = 'U1'
 FIXTURE = json.loads((ROOT / 'site/fitness.json').read_text())
 st.set_page_config(page_title='Recall — consent has an undo button', page_icon='↩', layout='wide', initial_sidebar_state='collapsed')
-st.markdown('''<style>
-:root{--ink:#302923;--accent:#a33f26;--muted:#6d6056;--line:#ded3c6;--paper:#faf7f2}
-.stApp{background:var(--paper);color:var(--ink)}
-.block-container{max-width:1250px;padding-top:2.2rem;padding-bottom:3rem}
-h1,h2,h3{font-family:'Trebuchet MS',sans-serif!important;letter-spacing:-.035em!important;color:var(--ink)}
-h1{font-size:3.1rem!important;font-weight:700!important;line-height:1.06!important}
-h2{font-size:1.55rem!important}h3{font-size:1.1rem!important}
-p,label{line-height:1.55}button{min-height:42px}button:focus-visible,a:focus-visible{outline:3px solid #a86612!important;outline-offset:3px}
-.brand{display:flex;align-items:center;gap:10px;font:700 19px 'Trebuchet MS',sans-serif;letter-spacing:-.5px;margin-bottom:32px}
-.brand-symbol{display:inline-grid;place-items:center;background:#a33f26;color:white;border-radius:10px;width:34px;height:34px;font-size:24px}
-.brand-note{font:11px ui-monospace,monospace;letter-spacing:.08em;margin-left:auto;color:#6d6056;text-transform:uppercase}
-.kicker{font:11px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.13em;color:#a33f26;margin-bottom:10px}
-.lede{font-size:17px;max-width:670px;color:#62564b;margin:10px 0 22px}
-.case-label{font:12px ui-monospace,monospace;color:#6d6056;margin-bottom:12px}
-.trail{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:15px 0 20px}
-.lane{border-top:3px solid #a33f26;padding-top:12px;position:relative}
-.lane+.lane:before{content:'→';position:absolute;top:-18px;left:-14px;color:#a33f26;background:#faf7f2;font-size:20px}
-.lane-title{font:11px ui-monospace,monospace;color:#62564b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
-.record{border:1px solid #ded3c6;background:white;border-radius:10px;padding:12px;margin-bottom:9px;min-height:110px}
-.record-id{font:10px ui-monospace,monospace;color:#6d6056}.record-title{font-size:13px;font-weight:600;margin:5px 0 10px;line-height:1.4}
-.badge{display:inline-block;font:10px ui-monospace,monospace;border-radius:4px;padding:3px 6px;background:#f6e9df;color:#a33f26}
-.badge.absent{background:#e4f4ef;color:#13695b}.badge.unknown{background:#fff1d9;color:#a86612}
-.receipt{background:white;border:1px solid #ded3c6;border-radius:13px;padding:22px;margin-bottom:14px;box-shadow:0 8px 24px #30292305}
-.receipt-title{font:11px ui-monospace,monospace;letter-spacing:.1em;color:#6d6056;text-transform:uppercase}
-.stamp{display:inline-block;border:2px solid currentColor;color:#13695b;padding:6px 10px;border-radius:5px;font:700 12px ui-monospace,monospace;margin:15px 0;transform:rotate(-3deg)}
-.stamp.pending{color:#a86612}.receipt-number{font:600 38px 'Trebuchet MS',sans-serif;letter-spacing:-2px}.receipt-copy{font-size:13px;color:#62564b}
-.timeline{border-left:2px solid #ded3c6;padding-left:15px;margin:10px 0}.event{margin:0 0 12px;font-size:12px;line-height:1.5}.event small{font:10px ui-monospace,monospace;color:#6d6056;display:block}
-.footnote{font-size:11px;color:#6d6056;border-top:1px solid #ded3c6;padding-top:15px;margin-top:35px}
-[data-testid=stSidebar]{background:#f0e9df}.stButton button[kind=primary],.stFormSubmitButton button[kind=primary]{background:#a33f26;border-color:#a33f26}
-[data-testid=stHeader]{background:var(--paper);color:var(--ink)}
-[data-testid=stSidebar], [data-testid=stWidgetLabel], [data-testid=stCaptionContainer]{color:var(--ink)!important}
-[data-testid=stWidgetLabel] p, [data-testid=stCaptionContainer] p{color:var(--ink)!important}
-[data-testid=stTextInput] input, [data-testid=stTextArea] textarea,
-[data-baseweb=base-input], [data-baseweb=input], [data-baseweb=textarea],
-[data-baseweb=select]>div{background:#fff!important;color:var(--ink)!important;-webkit-text-fill-color:var(--ink)}
-input::placeholder,textarea::placeholder{color:#62564b!important;-webkit-text-fill-color:#62564b;opacity:1}
-[data-baseweb=select] svg, [data-testid=stTextInput] button{color:var(--ink)!important}
-[data-baseweb=popover], [data-baseweb=popover] ul, [role=listbox], [role=option]{background:#fff!important;color:var(--ink)!important}
-[role=option]:hover, [role=option][aria-selected=true]{background:#f3dfcf!important}
-[data-testid=stButton] button, [data-testid=stLinkButton] a{background:#fff;color:var(--ink);border-color:#b8a797}
-[data-testid=stButton] button[kind=primary], [data-testid=stFormSubmitButton] button[kind=primary]{background:#a33f26;color:#fff}
-[data-testid=stExpander] details{background:var(--paper);border-color:var(--line);color:var(--ink)}
-[data-testid=stExpander] summary,
-[data-testid=stExpander] summary:hover,
-[data-testid=stExpander] details[open]>summary{background:#eee4d8!important;color:var(--ink)!important}
-[data-testid=stExpander] summary p, [data-testid=stExpander] summary svg{color:var(--ink)!important}
-[data-testid=stTable] table, [data-testid=stTable] td{background:#fff!important;color:var(--ink)!important;border-color:var(--line)!important}
-[data-testid=stTable] th{background:#eee4d8!important;color:var(--ink)!important;border-color:var(--line)!important}
-@media(max-width:700px){h1{font-size:2.3rem!important}.brand-note{display:none}.trail{gap:8px}.record{padding:8px}.record-title{font-size:11px}.block-container{padding-top:1.2rem}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-</style>''', unsafe_allow_html=True)
+st.markdown('<style>' + (ROOT / 'ui/recall.css').read_text() + '</style>', unsafe_allow_html=True)
 
 def esc(value):
     return html.escape(str(value))
@@ -140,25 +90,25 @@ st.markdown('<p class="lede">Your club questionnaire can live on as class prefer
 st.markdown('### 🔄 Your Withdrawal Journey')
 
 # Get current consent state early
-consent_state = engine.consent.get("state", "not_granted")
+consent_state = engine.consent_status(USER)["state"]
 
 workflow_cols = st.columns(3)
 with workflow_cols[0]:
-    st.markdown('<div style="background: #e8f4f8; padding: 12px; border-radius: 6px; border-left: 3px solid #0066cc;"><strong>1 - Give consent</strong><br><small>Share interests in Club Portal.</small></div>', unsafe_allow_html=True)
+    st.markdown('<div style="background: #f2e8dd; padding: 12px; border-radius: 6px; border-left: 3px solid #984b32;"><strong>1 - Give consent</strong><br><small>Share interests in Club Portal.</small></div>', unsafe_allow_html=True)
 
 with workflow_cols[1]:
-    st.markdown('<div style="background: #fff4e6; padding: 12px; border-radius: 6px; border-left: 3px solid #ff9900;"><strong>2 - Delete the form</strong><br><small>See other apps keep using it.</small></div>', unsafe_allow_html=True)
+    st.markdown('<div style="background: #fff4e6; padding: 12px; border-radius: 6px; border-left: 3px solid #85651f;"><strong>2 - Delete the form</strong><br><small>See other apps keep using it.</small></div>', unsafe_allow_html=True)
 
 with workflow_cols[2]:
-    st.markdown('<div style="background: #f0e6ff; padding: 12px; border-radius: 6px; border-left: 3px solid #9933ff;"><strong>3 - Ask Recall</strong><br><small>Approve withdrawal across all apps.</small></div>', unsafe_allow_html=True)
+    st.markdown('<div style="background: #eeE5eb; padding: 12px; border-radius: 6px; border-left: 3px solid #69445e;"><strong>3 - Ask Recall</strong><br><small>Approve withdrawal across all apps.</small></div>', unsafe_allow_html=True)
 
 # Workflow steps with expected outcomes
 st.markdown('### 🔄 Your Privacy Journey')
 
 journey_cols = st.columns(3)
 with journey_cols[0]:
-    step_bg = '#e3f2fd' if consent_state != "active" else '#c8e6c9'
-    step_border = '#0066cc' if consent_state != "active" else '#2e7d32'
+    step_bg = '#f2e8dd' if consent_state != "active" else '#c8e6c9'
+    step_border = '#984b32' if consent_state != "active" else '#2e7d32'
     step_marker = '→' if consent_state == "active" else '1️⃣'
     st.markdown(f'''
     <div style="background:{step_bg}; padding:14px; border-left:4px solid {step_border}; border-radius:6px;">
@@ -171,7 +121,7 @@ with journey_cols[0]:
 with journey_cols[1]:
     step_enabled = consent_state == "active"
     step_bg = '#fff3e0' if not step_enabled else '#fff9e6'
-    step_border = '#999' if not step_enabled else '#ff9900'
+    step_border = '#999' if not step_enabled else '#85651f'
     step_marker = '2️⃣' if not step_enabled else '→'
     st.markdown(f'''
     <div style="background:{step_bg}; padding:14px; border-left:4px solid {step_border}; border-radius:6px; opacity:{'0.6' if not step_enabled else '1'};">
@@ -184,13 +134,13 @@ with journey_cols[1]:
 with journey_cols[2]:
     step_enabled = consent_state == "active"
     step_bg = '#f3e5f5' if not step_enabled else '#fce4ec'
-    step_border = '#999' if not step_enabled else '#7b1fa2'
+    step_border = '#999' if not step_enabled else '#69445e'
     step_marker = '3️⃣' if not step_enabled else '→'
     st.markdown(f'''
     <div style="background:{step_bg}; padding:14px; border-left:4px solid {step_border}; border-radius:6px; opacity:{'0.6' if not step_enabled else '1'};">
         <strong style="color:#333;">{step_marker} Withdraw & Delete</strong><br>
         <small style="color:#666;">Take back control, delete everywhere</small>
-        {f'<div style="margin-top:8px; color:#7b1fa2; font-size:11px;"><strong>✓ Ready to withdraw</strong></div>' if step_enabled else '<div style="margin-top:8px; color:#999; font-size:11px;">After giving consent</div>'}
+        {f'<div style="margin-top:8px; color:#69445e; font-size:11px;"><strong>✓ Ready to withdraw</strong></div>' if step_enabled else '<div style="margin-top:8px; color:#999; font-size:11px;">After giving consent</div>'}
     </div>
     ''', unsafe_allow_html=True)
 
@@ -204,8 +154,7 @@ with action_col1:
     if consent_state != "active":
         if st.button('✅ Give Consent to Share', key='btn_consent', help='Enable data sharing', use_container_width=True):
             try:
-                engine.grant_consent(USER, True)
-                engine._save_json(engine.consent_file, engine.consent)
+                engine.grant_fitness_consent(USER)
                 st.success('✅ Consent granted! Watch the data flow below →')
                 st.rerun()
             except Exception as e:
@@ -213,37 +162,45 @@ with action_col1:
     else:
         if st.button('🔐 Withdraw Consent', key='btn_withdraw', help='Stop sharing', use_container_width=True):
             try:
-                engine.withdraw_consent(USER)
-                st.info('🔐 Consent withdrawn - click Reset to start over')
+                st.session_state['withdrawal_requested'] = True
+                st.info('Review the investigation and approve the exact withdrawal below.')
                 st.rerun()
             except Exception as e:
                 st.error(f'Error: {str(e)}')
 
 with action_col2:
     if st.button('🗑️ Delete Records', key='btn_delete', help='Mark for deletion', use_container_width=True):
-        if 'D1' in engine.catalog:
-            engine.catalog['D1']['deleted'] = True
-            engine._save_json(engine.catalog_file, engine.catalog)
-            st.warning('🗑️ Records marked for deletion')
+        if services:
+            services.call('documents', 'delete_profile', user=USER)
+            st.warning('Questionnaire deleted in Club Portal. Downstream copies remain.')
             st.rerun()
+        else:
+            st.info('Start the connected apps with python3 run_demo.py.')
 
 with action_col3:
     if st.button('🔄 Reset Demo', key='btn_reset_action', help='Start over', use_container_width=True):
-        engine.consent = {"state": "not_granted"}
-        engine._save_json(engine.consent_file, engine.consent)
+        engine.seed(FIXTURE)
         st.info('🔄 Demo reset')
         st.rerun()
 
 st.divider()
 
 # Data flow visualization
+if st.session_state.get('withdrawal_requested'):
+    st.info('Continue below: investigate the data trail, review the exact records, then approve withdrawal.')
 st.markdown('### 📊 Data Flow & Sharing Status')
 
 if consent_state == "active":
+    active_records = []
+    for meta in engine.discover_records(USER):
+        if engine.inspect_service(USER, meta["id"])["state"] == "present":
+            record = engine._read_record(meta["service"], meta["id"], USER)
+            if record:
+                active_records.append(record)
     # Get derived records to show data flow
-    source_records = [r for r in engine.catalog.values() if r.get('user_id') == USER and r.get('consent_root') == 'D1' and r.get('type') == 'source_document']
-    derived_class = [r for r in engine.catalog.values() if r.get('user_id') == USER and r.get('service') == 'search' and r.get('consent_root') == 'D1']
-    derived_offers = [r for r in engine.catalog.values() if r.get('user_id') == USER and r.get('service') == 'personalization' and r.get('consent_root') == 'D1']
+    source_records = [r for r in active_records if r.get('user_id') == USER and r.get('consent_root') == 'D1' and r.get('type') == 'source_document']
+    derived_class = [r for r in active_records if r.get('user_id') == USER and r.get('service') == 'search' and r.get('consent_root') == 'D1']
+    derived_offers = [r for r in active_records if r.get('user_id') == USER and r.get('service') == 'personalization' and r.get('consent_root') == 'D1']
 
     st.markdown('''
     <div style="background: linear-gradient(135deg, #e8f5e9 0%, #fff3e0 100%); padding: 16px; border-radius: 8px; border-left: 5px solid #4caf50; margin: 12px 0;">
@@ -255,7 +212,7 @@ if consent_state == "active":
     flow_col1, flow_col2, flow_col3, flow_col4 = st.columns([2, 1, 1.5, 1.5])
 
     with flow_col1:
-        st.markdown('**🔵 Source** (You shared this)')
+        st.markdown('**Source** (You shared this)')
         if source_records:
             for rec in source_records:
                 st.markdown(f'''
@@ -270,16 +227,16 @@ if consent_state == "active":
         st.markdown('<div style="text-align:center; color:#4caf50; font-size:20px; margin-top:20px;">→</div>', unsafe_allow_html=True)
 
     with flow_col3:
-        st.markdown('**🟡 Class Booking** (Using your preferences)')
+        st.markdown('**Class Booking** (Using your preferences)')
         if derived_class:
             count = len([r for r in derived_class if r.get('consent_root') == 'D1'])
             st.markdown(f'<div style="background:#fff3e0; padding:10px; border-left:3px solid #f57f17; border-radius:4px; font-size:11px; color:#e65100;"><strong>📥 {count} derived record(s)</strong><br>Recommendations based on your interests</div>', unsafe_allow_html=True)
 
     with flow_col4:
-        st.markdown('**🟣 Member Offers** (Personalized for you)')
+        st.markdown('**Member Offers** (Personalized for you)')
         if derived_offers:
             count = len([r for r in derived_offers if r.get('consent_root') == 'D1'])
-            st.markdown(f'<div style="background:#f3e5f5; padding:10px; border-left:3px solid #7b1fa2; border-radius:4px; font-size:11px; color:#4a148c;"><strong>📥 {count} derived record(s)</strong><br>Targeted offers & audience</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="background:#f3e5f5; padding:10px; border-left:3px solid #69445e; border-radius:4px; font-size:11px; color:#4a148c;"><strong>📥 {count} derived record(s)</strong><br>Targeted offers & audience</div>', unsafe_allow_html=True)
 
 else:
     st.markdown('''
@@ -289,7 +246,7 @@ else:
     </div>
     ''', unsafe_allow_html=True)
 
-    st.markdown('<div style="background: #f9f9f9; padding: 14px; border-radius: 6px; border-left: 4px solid #ff9900; margin: 12px 0;"><strong>📋 What happens when you give consent:</strong></div>', unsafe_allow_html=True)
+    st.markdown('<div style="background: #f9f9f9; padding: 14px; border-radius: 6px; border-left: 4px solid #85651f; margin: 12px 0;"><strong>📋 What happens when you give consent:</strong></div>', unsafe_allow_html=True)
 
     st.markdown('''
     **Step 1:** You share your fitness interests (e.g., "evening yoga")
@@ -331,7 +288,7 @@ st.caption('💡 **Smart dashboard** - Shows live records from each service. Cli
 if mode=='Guided rehearsal':
     st.warning('Guided rehearsal — the investigation is scripted. Deletions, recovery, verification, and replay protection use the real local stores.')
 else:
-    st.caption(f"Live agent team · {model or 'select a model in the sidebar'} · {provider}")
+    st.caption(f"Live agent team · {role_models.get('investigator') or 'select a model in the sidebar'} · {provider}")
 
 if services:
     links = st.columns(3)

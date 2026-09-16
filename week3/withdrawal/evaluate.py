@@ -220,12 +220,12 @@ Output as JSON:
 
         for target_id in proposed_targets:
             try:
-                record = self.engine.catalog.get(target_id, {})
+                record = self.engine.meta(target_id, self.user_id)
                 kind = record.get("kind", "")
 
                 if kind == "paid_booking":
                     protected["paid_bookings"].append(target_id)
-                elif kind == "public_listing":
+                elif kind in {"public_listing", "class_listing"}:
                     protected["public_listings"].append(target_id)
             except Exception:
                 pass

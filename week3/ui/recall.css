@@ -1,0 +1,52 @@
+
+:root{--ink:#292b27;--accent:#85651f;--muted:#6d6056;--line:#deded4;--paper:#f6f5f0}
+.stApp{background:var(--paper);color:var(--ink)}
+.block-container{max-width:1250px;padding-top:2.2rem;padding-bottom:3rem}
+h1,h2,h3{font-family:'Avenir Next',sans-serif!important;letter-spacing:-.035em!important;color:var(--ink)}
+h1{font-size:3.1rem!important;font-weight:700!important;line-height:1.06!important}
+h2{font-size:1.55rem!important}h3{font-size:1.1rem!important}
+p,label{line-height:1.55}button{min-height:42px}button:focus-visible,a:focus-visible{outline:3px solid #a86612!important;outline-offset:3px}
+.brand{display:flex;align-items:center;gap:10px;font:700 19px 'Avenir Next',sans-serif;letter-spacing:-.5px;margin-bottom:32px}
+.brand-symbol{display:inline-grid;place-items:center;background:#85651f;color:white;border-radius:10px;width:34px;height:34px;font-size:24px}
+.brand-note{font:11px ui-monospace,monospace;letter-spacing:.08em;margin-left:auto;color:#6d6056;text-transform:uppercase}
+.kicker{font:11px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.13em;color:#85651f;margin-bottom:10px}
+.lede{font-size:17px;max-width:670px;color:#62564b;margin:10px 0 22px}
+.case-label{font:12px ui-monospace,monospace;color:#6d6056;margin-bottom:12px}
+.trail{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:15px 0 20px}
+.lane{border-top:3px solid #85651f;padding-top:12px;position:relative}
+.lane+.lane:before{content:'→';position:absolute;top:-18px;left:-14px;color:#85651f;background:#f6f5f0;font-size:20px}
+.lane-title{font:11px ui-monospace,monospace;color:#62564b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
+.record{border:1px solid #deded4;background:white;border-radius:10px;padding:12px;margin-bottom:9px;min-height:110px}
+.record-id{font:10px ui-monospace,monospace;color:#6d6056}.record-title{font-size:13px;font-weight:600;margin:5px 0 10px;line-height:1.4}
+.badge{display:inline-block;font:10px ui-monospace,monospace;border-radius:4px;padding:3px 6px;background:#eee8d6;color:#85651f}
+.badge.absent{background:#e4f4ef;color:#13695b}.badge.unknown{background:#fff1d9;color:#a86612}
+.receipt{background:white;border:1px solid #deded4;border-radius:13px;padding:22px;margin-bottom:14px;box-shadow:0 8px 24px #292b2705}
+.receipt-title{font:11px ui-monospace,monospace;letter-spacing:.1em;color:#6d6056;text-transform:uppercase}
+.stamp{display:inline-block;border:2px solid currentColor;color:#13695b;padding:6px 10px;border-radius:5px;font:700 12px ui-monospace,monospace;margin:15px 0;transform:rotate(-3deg)}
+.stamp.pending{color:#a86612}.receipt-number{font:600 38px 'Avenir Next',sans-serif;letter-spacing:-2px}.receipt-copy{font-size:13px;color:#62564b}
+.timeline{border-left:2px solid #deded4;padding-left:15px;margin:10px 0}.event{margin:0 0 12px;font-size:12px;line-height:1.5}.event small{font:10px ui-monospace,monospace;color:#6d6056;display:block}
+.footnote{font-size:11px;color:#6d6056;border-top:1px solid #deded4;padding-top:15px;margin-top:35px}
+[data-testid=stSidebar]{background:#eeeee6}.stButton button[kind=primary],.stFormSubmitButton button[kind=primary]{background:#85651f;border-color:#85651f}
+[data-testid=stHeader]{background:var(--paper);color:var(--ink)}
+[data-testid=stSidebar], [data-testid=stWidgetLabel], [data-testid=stCaptionContainer]{color:var(--ink)!important}
+[data-testid=stWidgetLabel] p, [data-testid=stCaptionContainer] p{color:var(--ink)!important}
+[data-testid=stTextInput] input, [data-testid=stTextArea] textarea,
+[data-baseweb=base-input], [data-baseweb=input], [data-baseweb=textarea],
+[data-baseweb=select]>div{background:#fff!important;color:var(--ink)!important;-webkit-text-fill-color:var(--ink)}
+input::placeholder,textarea::placeholder{color:#62564b!important;-webkit-text-fill-color:#62564b;opacity:1}
+[data-baseweb=select] svg, [data-testid=stTextInput] button{color:var(--ink)!important}
+[data-baseweb=popover], [data-baseweb=popover] ul, [role=listbox], [role=option]{background:#fff!important;color:var(--ink)!important}
+[role=option]:hover, [role=option][aria-selected=true]{background:#e9e4d6!important}
+[data-testid=stButton] button, [data-testid=stLinkButton] a{background:#fff;color:var(--ink);border-color:#b8a797}
+[data-testid=stButton] button[kind=primary], [data-testid=stFormSubmitButton] button[kind=primary]{background:#85651f;color:#fff}
+[data-testid=stExpander] details{background:var(--paper);border-color:var(--line);color:var(--ink)}
+[data-testid=stExpander] summary,
+[data-testid=stExpander] summary:hover,
+[data-testid=stExpander] details[open]>summary{background:#eeeee6!important;color:var(--ink)!important}
+[data-testid=stExpander] summary p, [data-testid=stExpander] summary svg{color:var(--ink)!important}
+[data-testid=stTable] table, [data-testid=stTable] td{background:#fff!important;color:var(--ink)!important;border-color:var(--line)!important}
+[data-testid=stTable] th{background:#eeeee6!important;color:var(--ink)!important;border-color:var(--line)!important}
+@media(max-width:700px){h1{font-size:2.3rem!important}.brand-note{display:none}.trail{gap:8px}.record{padding:8px}.record-title{font-size:11px}.block-container{padding-top:1.2rem}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.brand{background:#292b27;color:#fff;padding:22px 26px;border-radius:4px}.brand-note{color:#ded8c3}.brand-symbol{background:#b8a064;color:#292b27}.stamp{transform:none}

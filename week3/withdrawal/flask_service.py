@@ -223,6 +223,45 @@ def create_app(service_name: str):
             'service': service_name
         }), 200
 
+    @app.route('/api/reset', methods=['POST'])
+    def api_reset():
+        """Reset service - stub for Engine integration."""
+        return jsonify({'success': True}), 200
+
+    @app.route('/api/read', methods=['POST'])
+    def api_read():
+        """Read record endpoint."""
+        data = request.get_json() or {}
+        record_id = data.get('id', '')
+        if record_id not in records:
+            return jsonify({'error': 'Not found'}), 404
+        return jsonify({'record': records[record_id]}), 200
+
+    @app.route('/api/delete', methods=['POST'])
+    def api_delete():
+        """Delete record endpoint."""
+        data = request.get_json() or {}
+        record_id = data.get('id', '')
+        if record_id not in records:
+            return jsonify({'error': 'Not found'}), 404
+        del records[record_id]
+        return jsonify({'changed': True}), 200
+
+    @app.route('/api/block', methods=['POST'])
+    def api_block():
+        """Block records endpoint."""
+        return jsonify({'success': True}), 200
+
+    @app.route('/api/behavior', methods=['POST'])
+    def api_behavior():
+        """Get behavior endpoint."""
+        return jsonify({'behavior': 'normal'}), 200
+
+    @app.route('/api/replay', methods=['POST'])
+    def api_replay():
+        """Replay endpoint."""
+        return jsonify({'replayed': True}), 200
+
     @app.route('/catalog', methods=['GET'])
     def catalog():
         """List all records for a user."""

@@ -1,528 +1,448 @@
-"""Core withdrawal engine - manages consent, deletion workflow, and verification."""
-
+"""Real local stores; simulated services. Model output never authorizes a write."""
+from __future__ import annotations
+import hashlib
 import json
-import uuid
+import sqlite3
 import time
-from datetime import datetime, timedelta
+import uuid
 from pathlib import Path
-from typing import Dict, List, Optional, Any
 
 
-class BoundaryError(Exception):
-    """Raised when workflow boundaries are violated."""
+class BoundaryError(ValueError):
     pass
 
 
-class SimpleDB:
-    """Simple in-memory database interface for catalog."""
-
-    def __init__(self, catalog: dict):
-        self.catalog = catalog
-        self._result = None
-
-    def execute(self, query: str, params=None):
-        """Execute a simple query."""
-        if 'SELECT 1 FROM catalog' in query:
-            self._result = (1,) if self.catalog else None
-        else:
-            self._result = None
-        return self
-
-    def fetchone(self):
-        """Fetch one result."""
-        return self._result
-
-
 class Engine:
-    """Manages withdrawal requests, consent state, and deletion workflow."""
-
-    def __init__(self, data_dir: str, services=None, require_review: bool = False):
-        """Initialize engine with data directory.
-
-        Args:
-            data_dir: Path to runtime data directory
-            services: Optional services configuration
-            require_review: Whether review is required (optional)
-        """
-        self.data_dir = Path(data_dir)
-        self.data_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, directory, services=None, require_review=False):
         self.services = services
-        self.require_review = require_review
+        self.require_review = require_review or bool(services)
+        self.directory = Path(directory)
+        self.directory.mkdir(parents=True, exist_ok=True)
+        self.db = sqlite3.connect(self.directory / 'workflow.sqlite')
+        self.db.row_factory = sqlite3.Row
+        self.db.executescript('''
+        CREATE TABLE IF NOT EXISTS catalog(id TEXT PRIMARY KEY, service TEXT, user_id TEXT, version INTEGER, kind TEXT, title TEXT);
+        CREATE TABLE IF NOT EXISTS edges(source TEXT, target TEXT, evidence TEXT);
+        CREATE TABLE IF NOT EXISTS requests(id TEXT PRIMARY KEY, user_id TEXT, payload TEXT, created REAL);
+        CREATE TABLE IF NOT EXISTS suppression(record_id TEXT PRIMARY KEY, user_id TEXT, request_id TEXT);
+        CREATE TABLE IF NOT EXISTS faults(service TEXT PRIMARY KEY, mode TEXT, remaining INTEGER);
+        CREATE TABLE IF NOT EXISTS consent(user_id TEXT, root_id TEXT, state TEXT, granted REAL, withdrawn REAL, purpose TEXT, PRIMARY KEY(user_id, root_id));
+        CREATE TABLE IF NOT EXISTS notifications(request_id TEXT, status TEXT, result TEXT, PRIMARY KEY(request_id,status));
+        ''')
+        self.db.commit()
 
-        self.catalog_file = self.data_dir / "catalog.json"
-        self.requests_file = self.data_dir / "requests.json"
-        self.consent_file = self.data_dir / "consent.json"
-        self.suppression_file = self.data_dir / "suppression.json"
-        self.edges_file = self.data_dir / "edges.json"
+    def close(self):
+        self.db.close()
 
-        self.catalog = self._load_json(self.catalog_file, {})
-        self.requests = self._load_json(self.requests_file, {})
-        self.consent = self._load_json(self.consent_file, {"state": "not_granted"})
-        self.suppression = self._load_json(self.suppression_file, {})
+    def _service(self, name):
+        if not name.replace('_', '').isalnum():
+            raise BoundaryError('Invalid service name.')
+        con = sqlite3.connect(self.directory / f'{name}.sqlite')
+        con.row_factory = sqlite3.Row
+        con.execute('CREATE TABLE IF NOT EXISTS records(id TEXT PRIMARY KEY, payload TEXT)')
+        return con
 
-        # Simple database interface for compatibility
-        self.db = SimpleDB(self.catalog)
-
-    def _load_json(self, path: Path, default: Any) -> Any:
-        """Load JSON file or return default."""
-        if path.exists():
-            try:
-                with open(path) as f:
-                    return json.load(f)
-            except Exception:
-                return default
-        return default
-
-    def _save_json(self, path: Path, data: Any) -> None:
-        """Save JSON file."""
-        with open(path, "w") as f:
-            json.dump(data, f, indent=2, default=str)
-
-    def discover_records(self, user_id: str, query: str = "") -> List[Dict]:
-        """Discover authorized record metadata.
-
-        Args:
-            user_id: User making the request
-            query: Search filter (empty lists all)
-
-        Returns:
-            List of matching record metadata
-
-        Raises:
-            BoundaryError: If read fails
-        """
-        if not self.catalog:
-            return []
-
-        results = []
-        query_lower = query.lower()
-
-        for record_id, record in self.catalog.items():
-            if record.get("user_id") != user_id:
+    def seed(self, fixture):
+        """Called only by an explicit fixture initialization/reset action."""
+        names = {r['service'] for r in fixture['records']}
+        names |= {r[0] for r in self.db.execute('SELECT DISTINCT service FROM catalog')}
+        for name in names:
+            if self.services:
+                self.services.reset(name)
+            else:
+                with self._service(name) as con:
+                    con.execute('DELETE FROM records')
+        for table in ['catalog', 'edges', 'requests', 'suppression', 'faults', 'consent', 'notifications']:
+            self.db.execute(f'DELETE FROM {table}')
+        for r in fixture['records']:
+            if self.services and r.get('consent_root'):
                 continue
-
-            if not query or any([
-                query_lower in record_id.lower(),
-                query_lower in record.get("title", "").lower(),
-                query_lower in record.get("service", "").lower(),
-                query_lower in record.get("kind", "").lower(),
-            ]):
-                results.append({
-                    "id": record_id,
-                    "title": record.get("title", ""),
-                    "service": record.get("service", ""),
-                    "kind": record.get("kind", ""),
-                    "version": record.get("version", 1),
-                })
-
-        return sorted(results, key=lambda r: r["id"])
-
-    def trace_lineage(self, user_id: str, root_id: str) -> Dict:
-        """Trace explicit dependencies for a root record.
-
-        Args:
-            user_id: User making the request
-            root_id: Root record ID to trace from
-
-        Returns:
-            Dict with records and edges (dependencies)
-
-        Raises:
-            BoundaryError: If root doesn't exist or read fails
-        """
-        if root_id not in self.catalog:
-            raise BoundaryError(f"Root record '{root_id}' not found")
-
-        if self.catalog[root_id].get("user_id") != user_id:
-            raise BoundaryError(f"Unauthorized access to '{root_id}'")
-
-        records = {root_id: self.catalog[root_id]}
-        edges = []
-        visited = {root_id}
-        queue = [root_id]
-
-        # Simple graph traversal - in real implementation would read from database
-        edges_data = self._load_json(self.data_dir / "edges.json", [])
-
-        while queue:
-            current = queue.pop(0)
-
-            for edge in edges_data:
-                if edge.get("source") == current and edge.get("target") not in visited:
-                    target_id = edge["target"]
-                    if target_id in self.catalog:
-                        target = self.catalog[target_id]
-                        if target.get("user_id") == user_id:
-                            records[target_id] = target
-                            visited.add(target_id)
-                            queue.append(target_id)
-                            edges.append({
-                                "source": edge["source"],
-                                "target": edge["target"],
-                                "relationship": edge.get("relationship", "derived_from"),
-                            })
-
-        return {
-            "records": list(records.values()),
-            "edges": edges,
-        }
-
-    def inspect_service(self, user_id: str, record_id: str) -> Dict:
-        """Check current presence and version of a record.
-
-        Args:
-            user_id: User making the request
-            record_id: Record ID to inspect
-
-        Returns:
-            Dict with state (present/absent/unknown), version, etc.
-
-        Raises:
-            BoundaryError: If unauthorized or service rejects
-        """
-        if record_id not in self.catalog:
-            raise BoundaryError(f"Record '{record_id}' not found")
-
-        record = self.catalog[record_id]
-        if record.get("user_id") != user_id:
-            raise BoundaryError(f"Unauthorized access to '{record_id}'")
-
-        # Check if suppressed (marked for non-reingestion)
-        if record_id in self.suppression:
-            return {
-                "record_id": record_id,
-                "state": "suppressed",
-                "version": record.get("version", 1),
-                "title": record.get("title", ""),
-                "service": record.get("service", ""),
-            }
-
-        # In real implementation, would query the actual service
-        # For now, return present state
-        return {
-            "record_id": record_id,
-            "state": "present",
-            "version": record.get("version", 1),
-            "title": record.get("title", ""),
-            "service": record.get("service", ""),
-        }
-
-    def grant_consent(self, user_id: str, agreed: bool = True) -> Dict:
-        """Grant sharing consent.
-
-        Args:
-            user_id: User granting consent
-            agreed: Whether user agreed
-
-        Returns:
-            Updated consent state
-
-        Raises:
-            BoundaryError: If consent cannot be granted
-        """
-        if not agreed:
-            raise BoundaryError("Explicit sharing consent is required")
-
-        if self.consent.get("state") == "withdrawn":
-            raise BoundaryError("Consent was withdrawn. Reset to start again.")
-
-        consent_id = str(uuid.uuid4())[:8]
-        self.consent = {
-            "id": consent_id,
-            "state": "active",
-            "user_id": user_id,
-            "granted_at": datetime.now().isoformat(),
-            "purpose": "Data sharing across services",
-        }
-        self._save_json(self.consent_file, self.consent)
-
-        return self.consent.copy()
-
-    def withdraw_consent(self, user_id: str) -> Dict:
-        """Withdraw sharing consent.
-
-        Args:
-            user_id: User withdrawing consent
-
-        Returns:
-            Updated consent state
-
-        Raises:
-            BoundaryError: If consent cannot be withdrawn
-        """
-        if self.consent.get("user_id") != user_id:
-            raise BoundaryError("Cannot withdraw someone else's consent")
-
-        self.consent["state"] = "withdrawn"
-        self.consent["withdrawn_at"] = datetime.now().isoformat()
-        self._save_json(self.consent_file, self.consent)
-
-        return self.consent.copy()
-
-    def create_request(
-        self,
-        user_id: str,
-        root_ids: List[str],
-        target_ids: List[str],
-        origin: str = "live_agent",
-    ) -> Dict:
-        """Create a withdrawal request.
-
-        Args:
-            user_id: User making request
-            root_ids: Root record IDs
-            target_ids: All target record IDs for deletion
-            origin: Request origin (live_agent, scripted_rehearsal)
-
-        Returns:
-            Created request dict
-
-        Raises:
-            BoundaryError: If request is invalid
-        """
-        if not root_ids or not target_ids:
-            raise BoundaryError("Request must have root and target records")
-
-        request_id = str(uuid.uuid4())[:8]
-        request = {
-            "id": request_id,
-            "user_id": user_id,
-            "root_ids": root_ids,
-            "target_ids": target_ids,
-            "status": "awaiting_approval",
-            "origin": origin,
-            "created_at": datetime.now().isoformat(),
-            "approval": None,
-            "completed_at": None,
-            "events": [],
-        }
-
-        self.requests[request_id] = request
-        self._save_json(self.requests_file, self.requests)
-
-        return request.copy()
-
-    def approve_request(self, request_id: str, user_id: str) -> Dict:
-        """Approve a withdrawal request.
-
-        Args:
-            request_id: Request to approve
-            user_id: User approving
-
-        Returns:
-            Updated request
-
-        Raises:
-            BoundaryError: If approval is invalid
-        """
-        if request_id not in self.requests:
-            raise BoundaryError(f"Request '{request_id}' not found")
-
-        request = self.requests[request_id]
-        if request["user_id"] != user_id:
-            raise BoundaryError("Cannot approve someone else's request")
-
-        if request["status"] != "awaiting_approval":
-            raise BoundaryError(f"Request status '{request['status']}' doesn't allow approval")
-
-        request["approval"] = {
-            "approved_by": user_id,
-            "approved_at": datetime.now().isoformat(),
-            "expires_at": (datetime.now() + timedelta(hours=24)).isoformat(),
-        }
-        request["status"] = "approved"
-        self._save_json(self.requests_file, self.requests)
-
-        return request.copy()
-
-    def execute_deletion(self, request_id: str, user_id: str) -> Dict:
-        """Execute approved deletion.
-
-        Args:
-            request_id: Approved request to execute
-            user_id: User executing
-
-        Returns:
-            Execution result with deleted records
-
-        Raises:
-            BoundaryError: If deletion cannot proceed
-        """
-        if request_id not in self.requests:
-            raise BoundaryError(f"Request '{request_id}' not found")
-
-        request = self.requests[request_id]
-        if request["user_id"] != user_id:
-            raise BoundaryError("Cannot execute someone else's request")
-
-        if request["status"] != "approved":
-            raise BoundaryError(f"Request must be approved before execution")
-
-        if not request["approval"]:
-            raise BoundaryError("Missing approval")
-
-        # Check approval hasn't expired
-        expires = datetime.fromisoformat(request["approval"]["expires_at"])
-        if datetime.now() > expires:
-            raise BoundaryError("Approval has expired")
-
-        # Execute deletions
-        deleted = []
-        failed = []
-
-        for target_id in request["target_ids"]:
-            try:
-                if target_id in self.catalog:
-                    # Mark as suppressed (pending deletion from real services)
-                    self.suppression[target_id] = {
-                        "user_id": user_id,
-                        "request_id": request_id,
-                        "suppressed_at": datetime.now().isoformat(),
-                    }
-                    deleted.append(target_id)
-                    request["events"].append({
-                        "timestamp": datetime.now().isoformat(),
-                        "type": "deleted",
-                        "record_id": target_id,
-                    })
-            except Exception as e:
-                failed.append({"record_id": target_id, "error": str(e)})
-
-        # If consent-based withdrawal, mark consent as withdrawn
-        if request.get("origin") == "live_agent":
-            if self.consent.get("state") == "active":
-                self.consent["state"] = "withdrawn"
-                self.consent["withdrawn_at"] = datetime.now().isoformat()
-
-        request["status"] = "executing"
-        request["completed_at"] = datetime.now().isoformat()
-        self._save_json(self.requests_file, self.requests)
-        self._save_json(self.suppression_file, self.suppression)
-        self._save_json(self.consent_file, self.consent)
-
-        return {
-            "deleted": deleted,
-            "failed": failed,
-            "total": len(request["target_ids"]),
-            "status": "complete" if not failed else "partial",
-        }
-
-    def seed(self, data: Dict) -> None:
-        """Seed the engine with initial catalog data.
-
-        Args:
-            data: Dictionary with 'records' and optional 'edges' keys
-        """
-        records = data.get("records", [])
-        edges = data.get("edges", [])
-
-        # Load records into catalog
-        for record in records:
-            record_id = record.get("id")
-            if record_id:
-                self.catalog[record_id] = record
-
-        # Save to files
-        self._save_json(self.catalog_file, self.catalog)
-        if edges:
-            self._save_json(self.edges_file, edges)
-
-    def close(self) -> None:
-        """Close the engine and ensure all data is persisted."""
-        self._save_json(self.catalog_file, self.catalog)
-        self._save_json(self.requests_file, self.requests)
-        self._save_json(self.consent_file, self.consent)
-        self._save_json(self.suppression_file, self.suppression)
-
-    def purge_expired_requests(self) -> None:
-        """Remove expired approval requests."""
-        expired = []
-        for request_id, request in self.requests.items():
-            if request.get("status") == "approved" and request.get("approval"):
-                expires = datetime.fromisoformat(request["approval"]["expires_at"])
-                if datetime.now() > expires:
-                    expired.append(request_id)
-
-        for request_id in expired:
-            del self.requests[request_id]
-
-        if expired:
-            self._save_json(self.requests_file, self.requests)
-
-    def get_request(self, request_id: str, user_id: str) -> Dict:
-        """Get request details.
-
-        Args:
-            request_id: Request ID
-            user_id: User accessing
-
-        Returns:
-            Request data
-
-        Raises:
-            BoundaryError: If unauthorized
-        """
-        if request_id not in self.requests:
-            raise BoundaryError(f"Request '{request_id}' not found")
-
-        request = self.requests[request_id]
-        if request["user_id"] != user_id:
-            raise BoundaryError("Cannot access someone else's request")
-
-        return request.copy()
-
-    def latest(self, user_id: str) -> Optional[Dict]:
-        """Get the latest request for a user.
-
-        Args:
-            user_id: User ID
-
-        Returns:
-            Latest request or None
-        """
-        user_requests = [r for r in self.requests.values() if r.get("user_id") == user_id]
-        if not user_requests:
+            if not self.services:
+                with self._service(r['service']) as con:
+                    con.execute('INSERT INTO records VALUES (?,?)', (r['id'], json.dumps(r)))
+            self.db.execute('INSERT INTO catalog VALUES (?,?,?,?,?,?)',
+                            (r['id'], r['service'], r['user_id'], r['version'], r['type'], r.get('title', r['id'])))
+        for e in fixture['lineage']:
+            if self.services and any(r.get('consent_root') for r in fixture['records'] if r['id'] == e['target']):
+                continue
+            self.db.execute('INSERT INTO edges VALUES (?,?,?)', (e['source'], e['target'], e['evidence_id']))
+        self.db.commit()
+
+    def consent_status(self, user, root='D1'):
+        row = self.db.execute('SELECT * FROM consent WHERE user_id=? AND root_id=?', (user, root)).fetchone()
+        return dict(row) if row else {'state': 'not_granted'}
+
+    def grant_fitness_consent(self, user):
+        if not self.services or user != 'U1':
+            raise BoundaryError('Fitness consent requires the connected demo applications.')
+        previous = self.consent_status(user)
+        if previous['state'] == 'withdrawn':
+            raise BoundaryError('This consent has been withdrawn. Reset the demo to start a new journey.')
+        self.db.execute('INSERT OR IGNORE INTO consent VALUES (?,?,?,?,?,?)',
+                        (user, 'D1', 'active', time.time(), None,
+                         'Share fitness interests with Class Booking for recommendations and Member Offers for personalized promotions.'))
+        self.db.commit()
+        fixture = json.loads((Path(__file__).resolve().parents[1] / 'data/fitness.json').read_text())
+        # Record intended provenance before sending a write: a lost response cannot hide a copy.
+        # Presence is subsequently checked against the application's own store.
+        for record in fixture['records']:
+            if record.get('consent_root') != 'D1':
+                continue
+            self.db.execute('INSERT OR IGNORE INTO catalog VALUES (?,?,?,?,?,?)',
+                            (record['id'], record['service'], user, record['version'], record['type'], record['title']))
+            for edge in fixture['lineage']:
+                if edge['target'] == record['id'] and not self.db.execute('SELECT 1 FROM edges WHERE source=? AND target=?',
+                                                                         (edge['source'], edge['target'])).fetchone():
+                    self.db.execute('INSERT INTO edges VALUES (?,?,?)',
+                                    (edge['source'], edge['target'], 'SHARE-' + uuid.uuid4().hex[:12]))
+            self.db.commit()
+            self.services.ingest(record['service'], record['id'], user)
+        return self.consent_status(user)
+
+    def meta(self, rid, user):
+        row = self.db.execute('SELECT * FROM catalog WHERE id=? AND user_id=?', (rid, user)).fetchone()
+        if not row:
+            raise BoundaryError('Record is not available within your authorized scope.')
+        return dict(row)
+
+    def set_fault(self, service, mode='offline', remaining=-1):
+        self.db.execute('INSERT OR REPLACE INTO faults VALUES (?,?,?)', (service, mode, remaining))
+        self.db.commit()
+
+    def clear_faults(self):
+        self.db.execute('DELETE FROM faults')
+        self.db.commit()
+
+    def _fault(self, service, operation):
+        row = self.db.execute('SELECT * FROM faults WHERE service=?', (service,)).fetchone()
+        if not row or row['remaining'] == 0 or (row['mode'] != 'offline' and operation != 'delete'):
             return None
+        if row['remaining'] > 0:
+            self.db.execute('UPDATE faults SET remaining=remaining-1 WHERE service=?', (service,))
+            self.db.commit()
+        return row['mode']
 
-        # Sort by created_at timestamp, newest first
-        user_requests.sort(key=lambda r: r.get("created_at", ""), reverse=True)
-        return user_requests[0].copy() if user_requests else None
+    def discover_records(self, user, query=''):
+        rows = [dict(r) for r in self.db.execute('SELECT * FROM catalog WHERE user_id=? ORDER BY id', (user,))]
+        return [r for r in rows if not query or query.casefold() in json.dumps(r).casefold()]
 
-    def search(self, user_id: str, query: str = "") -> List[Dict]:
-        """Search catalog for user's records.
-
-        Args:
-            user_id: User ID
-            query: Search query string
-
-        Returns:
-            List of matching records
-        """
-        if not query.strip():
-            return []
-
-        results = []
-        query_lower = query.lower()
-
-        for record_id, record in self.catalog.items():
-            if record.get("user_id") != user_id:
+    def trace_lineage(self, user, root_id):
+        self.meta(root_id, user)
+        seen, edges, queue = set(), [], [root_id]
+        while queue:
+            rid = queue.pop(0)
+            if rid in seen:
                 continue
+            self.meta(rid, user)
+            seen.add(rid)
+            for e in self.db.execute('SELECT * FROM edges WHERE source=?', (rid,)):
+                self.meta(e['target'], user)
+                edges.append(dict(e))
+                queue.append(e['target'])
+        shared = set()
+        for rid in seen - {root_id}:
+            for e in self.db.execute('SELECT * FROM edges WHERE target=?', (rid,)):
+                if e['source'] not in seen:
+                    shared.add(rid)
+        return {'root': root_id, 'records': [self.meta(r, user) for r in sorted(seen)],
+                'edges': edges, 'shared_dependencies': sorted(shared)}
 
-            # Search in title, service, kind, and content
-            searchable = ' '.join([
-                record.get("title", ""),
-                record.get("service", ""),
-                record.get("kind", ""),
-                record.get("content", ""),
-            ]).lower()
+    def inspect_service(self, user, record_id):
+        meta = self.meta(record_id, user)
+        if self._fault(meta['service'], 'read') == 'offline':
+            return {**meta, 'state': 'unknown'}
+        try:
+            rec = self._read_record(meta['service'], record_id, user)
+        except ConnectionError:
+            return {**meta, 'state': 'unknown'}
+        if rec:
+            if rec['user_id'] != user:
+                raise BoundaryError('Service identity mismatch.')
+            return {**meta, 'version': rec['version'], 'state': 'present'}
+        return {**meta, 'state': 'absent'}
 
-            if query_lower in searchable:
-                results.append({
-                    "id": record_id,
-                    "title": record.get("title", ""),
-                    "service": record.get("service", ""),
-                    "kind": record.get("kind", ""),
-                    "text": record.get("title", ""),
-                })
+    def _read_record(self, service, rid, user):
+        if self.services:
+            return self.services.read(service, rid, user)
+        with self._service(service) as con:
+            row = con.execute('SELECT payload FROM records WHERE id=?', (rid,)).fetchone()
+        return json.loads(row[0]) if row else None
 
-        return sorted(results, key=lambda r: r["id"])
+    def _delete_record(self, target, user):
+        if self.services:
+            return self.services.delete(target['service'], target['id'], user, target['version'])
+        with self._service(target['service']) as con:
+            con.execute('BEGIN IMMEDIATE')
+            row = con.execute('SELECT payload FROM records WHERE id=?', (target['id'],)).fetchone()
+            if row:
+                rec = json.loads(row[0])
+                if rec['version'] != target['version'] or rec['user_id'] != user:
+                    return False
+            con.execute('DELETE FROM records WHERE id=?', (target['id'],))
+        return True
+
+    def create_plan(self, user, roots, proposed_targets=None, origin='live_agent'):
+        if not roots or len(set(roots)) != len(roots):
+            raise BoundaryError('Select at least one distinct source.')
+        records, edges = {}, []
+        for root in roots:
+            trail = self.trace_lineage(user, root)
+            if trail['shared_dependencies']:
+                raise BoundaryError('A derived record has another source. Human review is required; no deletion plan was created.')
+            records.update({r['id']: r for r in trail['records']})
+            edges.extend(trail['edges'])
+        if proposed_targets is not None and set(proposed_targets) != set(records):
+            raise BoundaryError('Proposed targets do not match the evidenced dependency scope.')
+        targets = []
+        for rid, rec in records.items():
+            if rec['kind'] in {'paid_booking', 'class_listing'}:
+                raise BoundaryError('Paid bookings and public class listings are protected from consent withdrawal.')
+            actual = self.inspect_service(user, rid)
+            targets.append({**rec, 'version': actual['version'], 'status': 'pending', 'attempts': 0,
+                            'verification': 'not_checked', 'newly_deleted': False})
+        req = {'id': uuid.uuid4().hex[:12], 'user_id': user, 'roots': sorted(roots),
+               'targets': sorted(targets, key=lambda t: t['id']), 'edges': edges,
+               'status': 'awaiting_approval', 'origin': origin, 'approval': None,
+               'events': [], 'created': time.time(), 'retry_limit': 2,
+               'scope': 'Withdraw the recorded consent for the selected sources, delete their explicitly linked descendants, and block their re-ingestion.',
+               'review_required': self.require_review,
+               'consent_roots': [root for root in roots if self.consent_status(user, root)['state'] != 'not_granted']}
+        if self.require_review:
+            req['status'] = 'under_review'
+        self._order(req)  # Refuse unsupported cyclic graphs before approval.
+        self.event(req, 'plan_ready', 'Preview prepared. No deletion has occurred.')
+        self.save(req)
+        return req
+
+    @staticmethod
+    def plan_hash(req):
+        fields = {'user': req['user_id'], 'roots': req['roots'], 'scope': req['scope'],
+                  'targets': [{k: t[k] for k in ['id', 'service', 'version']} for t in req['targets']],
+                  'edges': req['edges'], 'retry_limit': req['retry_limit'], 'consent_roots': req.get('consent_roots', [])}
+        return hashlib.sha256(json.dumps(fields, sort_keys=True).encode()).hexdigest()
+
+    def save(self, req):
+        self.db.execute('INSERT OR REPLACE INTO requests VALUES (?,?,?,?)',
+                        (req['id'], req['user_id'], json.dumps(req), req['created']))
+        self.db.commit()
+
+    def get_request(self, request_id, user):
+        row = self.db.execute('SELECT payload FROM requests WHERE id=? AND user_id=?', (request_id, user)).fetchone()
+        if not row:
+            raise BoundaryError('Request is not available.')
+        return json.loads(row[0])
+
+    def latest(self, user):
+        row = self.db.execute('SELECT payload FROM requests WHERE user_id=? ORDER BY created DESC LIMIT 1', (user,)).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def approve(self, request_id, user):
+        req = self.get_request(request_id, user)
+        if req['status'] != 'awaiting_approval':
+            raise BoundaryError('Only a current preview can be approved.')
+        if req.get('review_required'):
+            gate = req.get('evaluation', {})
+            if gate.get('verdict') != 'pass' or gate.get('plan_hash') != self.plan_hash(req):
+                raise BoundaryError('The current plan must pass evaluation before approval.')
+            from .review import hard_checks
+            if hard_checks(self, req):
+                raise BoundaryError('The evidence changed. Run the review again before approval.')
+        req['approval'] = {'hash': self.plan_hash(req), 'at': time.time(), 'expires': time.time()+86400, 'active': True}
+        req['status'] = 'approved'
+        self.event(req, 'approved', 'Human approved these targets, withdrawal markers, and bounded retries.')
+        self.save(req)
+        return req
+
+    def revoke(self, request_id, user):
+        req = self.get_request(request_id, user)
+        if req['approval']:
+            req['approval']['active'] = False
+        req['status'] = 'approval_revoked'
+        self.event(req, 'revoked', 'Further attempts stopped. Completed deletions cannot be undone.')
+        self.save(req)
+        return req
+
+    def check_approval(self, req):
+        a = req['approval']
+        if not a or not a['active'] or a['expires'] < time.time() or a['hash'] != self.plan_hash(req):
+            raise BoundaryError('A valid human approval is required.')
+
+    @staticmethod
+    def event(req, kind, message, record_id=None):
+        req['events'].append({'time': time.time(), 'kind': kind, 'record_id': record_id, 'message': message})
+
+    def _order(self, req):
+        remaining = {t['id']: t for t in req['targets']}
+        result = []
+        while remaining:
+            leaves = sorted(r for r in remaining if not any(e['source'] == r and e['target'] in remaining for e in req['edges']))
+            if not leaves:
+                raise BoundaryError('Cyclic dependencies require human review.')
+            for rid in leaves:
+                result.append(remaining.pop(rid))
+        return result
+
+    def stale(self, req):
+        req['approval'] = None
+        req['status'] = 'needs_new_plan'
+        self.event(req, 'scope_changed', 'Data changed. Investigate again and obtain fresh approval.')
+        self.save(req)
+        return req
+
+    def delete_approved_records(self, request_id, user, stop_after=None):
+        req = self.get_request(request_id, user)
+        self.check_approval(req)
+        current, edges = set(), []
+        for root in req['roots']:
+            trail = self.trace_lineage(user, root)
+            current.update(r['id'] for r in trail['records'])
+            edges.extend(trail['edges'])
+            if trail['shared_dependencies']:
+                return self.stale(req)
+        if current != {t['id'] for t in req['targets']} or sorted(edges, key=str) != sorted(req['edges'], key=str):
+            return self.stale(req)
+        for target in req['targets']:
+            actual = self.inspect_service(user, target['id'])
+            if actual['state'] == 'present' and actual['version'] != target['version']:
+                return self.stale(req)
+        ordered = self._order(req)
+        for root in req['roots']:
+            self.db.execute("UPDATE consent SET state='withdrawn', withdrawn=? WHERE user_id=? AND root_id=?",
+                            (time.time(), user, root))
+        for target in req['targets']:
+            self.db.execute('INSERT OR IGNORE INTO suppression VALUES (?,?,?)', (target['id'], user, request_id))
+        self.db.commit()
+        req['status'] = 'executing'
+        self.save(req)
+        if self.services:
+            for service in sorted({t['service'] for t in req['targets']}):
+                self.check_approval(self.get_request(request_id, user))
+                try:
+                    if self._fault(service, 'read') == 'offline':
+                        raise ConnectionError()
+                    self.services.block(service, user, [t['id'] for t in req['targets'] if t['service'] == service])
+                except ConnectionError:
+                    self.event(req, 'unavailable', f'{service}: withdrawal blocks could not yet be confirmed.')
+            self.save(req)
+        completed = 0
+        for target in ordered:
+            self.check_approval(self.get_request(request_id, user))
+            actual = self.inspect_service(user, target['id'])
+            if actual['state'] == 'absent':
+                target.update(status='verified_absent', verification='absent')
+                self.event(req, 'verified', 'Read confirms absence; no new delete needed.', target['id'])
+                self.save(req)
+                continue
+            target['status'] = 'pending'
+            while target['attempts'] < 3:
+                if actual['state'] == 'unknown':
+                    self.event(req, 'unavailable', 'Service unavailable; verification is unknown.', target['id'])
+                    break
+                self.check_approval(self.get_request(request_id, user))
+                target['attempts'] += 1
+                self.event(req, 'delete_attempt', 'Execute approved deletion.', target['id'])
+                self.save(req)
+                fault = self._fault(target['service'], 'delete')
+                if fault in ['offline', 'fail_before_commit']:
+                    self.event(req, 'retry', 'Attempt failed before commit.', target['id'])
+                else:
+                    try:
+                        if not self._delete_record(target, user):
+                            return self.stale(req)
+                    except ConnectionError:
+                        fault = 'commit_then_timeout'
+                    if fault == 'commit_then_timeout':
+                        self.event(req, 'uncertain', 'Response lost; inspect before any retry.', target['id'])
+                    else:
+                        target['newly_deleted'] = True
+                actual = self.inspect_service(user, target['id'])
+                if actual['state'] == 'absent':
+                    target.update(status='verified_absent', verification='absent')
+                    self.event(req, 'verified', 'Independent read confirms absence.', target['id'])
+                    completed += 1
+                    break
+            if target['status'] != 'verified_absent':
+                target.update(status='unresolved', verification=actual['state'])
+            self.save(req)
+            if stop_after and completed >= stop_after:
+                req['status'] = 'interrupted'
+                self.event(req, 'interrupted', 'Worker stopped. Resume from persistent state.')
+                self.save(req)
+                return req
+        return self.verify_withdrawal(request_id, user)
+
+    def verify_withdrawal(self, request_id, user):
+        req = self.get_request(request_id, user)
+        for t in req['targets']:
+            actual = self.inspect_service(user, t['id'])
+            t['verification'] = actual['state']
+            t['status'] = 'verified_absent' if actual['state'] == 'absent' else 'unresolved'
+        if req['approval']:
+            req['status'] = 'complete' if all(t['verification'] == 'absent' for t in req['targets']) else 'partial'
+            if self.services:
+                checks = self.behavior_checks(user, req)
+                req['behavior_checks'] = checks
+                if any(c['result'] != 'pass' for c in checks):
+                    req['status'] = 'partial'
+        req['full_withdrawal_complete'] = req['status'] == 'complete'
+        self.event(req, 'verification', f"Verification result: {req['status']}.")
+        self.save(req)
+        return req
+
+    def behavior_checks(self, user, req):
+        results = []
+        for root in req.get('consent_roots', []):
+            results.append({'id': 'consent:' + root, 'result': 'pass' if self.consent_status(user, root)['state'] == 'withdrawn' else 'fail',
+                            'detail': 'Recorded sharing consent is withdrawn.'})
+        for service in sorted({t['service'] for t in req['targets']}):
+            try:
+                if self._fault(service, 'read') == 'offline':
+                    raise ConnectionError()
+                snapshot = self.services.behavior(service, user)
+                ids = {t['id'] for t in req['targets'] if t['service'] == service}
+                remaining = sorted(ids & set(snapshot['active_ids']))
+                unblocked = sorted(ids - set(snapshot['blocked_ids']))
+                # Detect downstream records added since approval without authorizing new writes.
+                unexpected = sorted(set(snapshot['consent_ids']) - ids) if 'D1' in req.get('consent_roots', []) else []
+                results.append({'id': 'surface:' + service, 'result': 'fail' if remaining or unblocked or unexpected else 'pass',
+                                'detail': {'remaining': remaining, 'unblocked': unblocked, 'unexpected': unexpected,
+                                           'visible_ids': snapshot['visible_ids']}})
+                if service == 'search':
+                    results.append({'id': 'preserved:B1', 'result': 'pass' if 'B1' in snapshot['active_ids'] else 'fail',
+                                    'detail': 'Paid booking remains available.'})
+            except ConnectionError:
+                results.append({'id': 'surface:' + service, 'result': 'unknown', 'detail': 'Application unavailable.'})
+        return results
+
+    def replay_ingestion(self, user, record):
+        """Explicit synthetic ingestion probe. The source uses stable record IDs."""
+        meta = self.meta(record['id'], user)
+        if record['user_id'] != user or meta['service'] != record['service']:
+            raise BoundaryError('Identity or service mismatch.')
+        blocked = self.db.execute('SELECT 1 FROM suppression WHERE record_id=? AND user_id=?', (record['id'], user)).fetchone()
+        if blocked:
+            return {'record_id': record['id'], 'result': 'blocked', 'reason': 'Approved withdrawal marker'}
+        if self.services:
+            return self.services.replay(record['service'], record['id'], user)
+        with self._service(record['service']) as con:
+            con.execute('INSERT OR REPLACE INTO records VALUES (?,?)', (record['id'], json.dumps(record)))
+        return {'record_id': record['id'], 'result': 'inserted'}
+
+    def search(self, user, query):
+        """Real lexical retrieval over active synthetic records; no claimed vector search."""
+        results = []
+        for meta in self.discover_records(user):
+            if self.inspect_service(user, meta['id'])['state'] != 'present':
+                continue
+            try:
+                rec = self._read_record(meta['service'], meta['id'], user)
+            except ConnectionError:
+                continue
+            if rec:
+                if query.casefold() in rec['content'].casefold():
+                    results.append({'id': rec['id'], 'service': rec['service'], 'text': rec['content']})
+        return results
+
+    def purge_expired_requests(self):
+        self.db.execute('DELETE FROM requests WHERE created < ?', (time.time()-86400,))
+        self.db.commit()

@@ -12,9 +12,7 @@ import time
 import httpx
 
 from withdrawal.core import Engine
-from withdrawal.services import HttpServices
-
-PORTS = HttpServices.PORTS
+from withdrawal.services import HttpServices, PORTS
 
 ROOT = Path(__file__).resolve().parent
 
@@ -65,7 +63,7 @@ def main():
         for port in [*PORTS.values(), args.dashboard_port, *([mcp_port] if use_mcp else [])]:
             available(port)
         for service in PORTS:
-            children.append(subprocess.Popen([sys.executable, '-m', 'withdrawal.flask_service', service], cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+            children.append(subprocess.Popen([sys.executable, '-m', 'withdrawal.service_app', service, '--directory', str(args.directory / 'applications')], cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
         deadline = time.monotonic() + 20
         pending = set(PORTS)
         with httpx.Client(trust_env=False, timeout=.5) as client:
@@ -83,9 +81,9 @@ def main():
                     raise RuntimeError('Applications did not become ready: ' + ', '.join(sorted(pending)))
                 if pending:
                     time.sleep(.1)
-        engine = Engine(args.directory / 'recall')
+        engine = Engine(args.directory / 'recall', HttpServices(urls, token))
         try:
-            if args.reset or not engine.catalog:
+            if args.reset or not engine.db.execute('SELECT 1 FROM catalog').fetchone():
                 engine.seed(json.loads((ROOT / 'site/fitness.json').read_text()))
         finally:
             engine.close()
