@@ -1,0 +1,360 @@
+from __future__ import annotations
+import html
+import hashlib
+import json
+import os
+from pathlib import Path
+from datetime import datetime
+import streamlit as st
+from withdrawal.core import Engine, BoundaryError
+from withdrawal.agent import ModelClient, ModelError, settings
+from withdrawal.services import configured_services
+from withdrawal.review import review_plan, deterministic_rehearsal, audit_outcome
+from withdrawal.notifications import notification_settings, notify_withdrawal_status
+
+ROOT = Path(__file__).parent
+USER = 'U1'
+FIXTURE = json.loads((ROOT / 'data/fitness.json').read_text())
+st.set_page_config(page_title='Recall — consent has an undo button', page_icon='↩', layout='wide', initial_sidebar_state='collapsed')
+st.markdown('''<style>
+:root{--ink:#302923;--accent:#a33f26;--muted:#6d6056;--line:#ded3c6;--paper:#faf7f2}
+.stApp{background:var(--paper);color:var(--ink)}
+.block-container{max-width:1250px;padding-top:2.2rem;padding-bottom:3rem}
+h1,h2,h3{font-family:'Trebuchet MS',sans-serif!important;letter-spacing:-.035em!important;color:var(--ink)}
+h1{font-size:3.1rem!important;font-weight:700!important;line-height:1.06!important}
+h2{font-size:1.55rem!important}h3{font-size:1.1rem!important}
+p,label{line-height:1.55}button{min-height:42px}button:focus-visible,a:focus-visible{outline:3px solid #a86612!important;outline-offset:3px}
+.brand{display:flex;align-items:center;gap:10px;font:700 19px 'Trebuchet MS',sans-serif;letter-spacing:-.5px;margin-bottom:32px}
+.brand-symbol{display:inline-grid;place-items:center;background:#a33f26;color:white;border-radius:10px;width:34px;height:34px;font-size:24px}
+.brand-note{font:11px ui-monospace,monospace;letter-spacing:.08em;margin-left:auto;color:#6d6056;text-transform:uppercase}
+.kicker{font:11px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.13em;color:#a33f26;margin-bottom:10px}
+.lede{font-size:17px;max-width:670px;color:#62564b;margin:10px 0 22px}
+.case-label{font:12px ui-monospace,monospace;color:#6d6056;margin-bottom:12px}
+.trail{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:15px 0 20px}
+.lane{border-top:3px solid #a33f26;padding-top:12px;position:relative}
+.lane+.lane:before{content:'→';position:absolute;top:-18px;left:-14px;color:#a33f26;background:#faf7f2;font-size:20px}
+.lane-title{font:11px ui-monospace,monospace;color:#62564b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
+.record{border:1px solid #ded3c6;background:white;border-radius:10px;padding:12px;margin-bottom:9px;min-height:110px}
+.record-id{font:10px ui-monospace,monospace;color:#6d6056}.record-title{font-size:13px;font-weight:600;margin:5px 0 10px;line-height:1.4}
+.badge{display:inline-block;font:10px ui-monospace,monospace;border-radius:4px;padding:3px 6px;background:#f6e9df;color:#a33f26}
+.badge.absent{background:#e4f4ef;color:#13695b}.badge.unknown{background:#fff1d9;color:#a86612}
+.receipt{background:white;border:1px solid #ded3c6;border-radius:13px;padding:22px;margin-bottom:14px;box-shadow:0 8px 24px #30292305}
+.receipt-title{font:11px ui-monospace,monospace;letter-spacing:.1em;color:#6d6056;text-transform:uppercase}
+.stamp{display:inline-block;border:2px solid currentColor;color:#13695b;padding:6px 10px;border-radius:5px;font:700 12px ui-monospace,monospace;margin:15px 0;transform:rotate(-3deg)}
+.stamp.pending{color:#a86612}.receipt-number{font:600 38px 'Trebuchet MS',sans-serif;letter-spacing:-2px}.receipt-copy{font-size:13px;color:#62564b}
+.timeline{border-left:2px solid #ded3c6;padding-left:15px;margin:10px 0}.event{margin:0 0 12px;font-size:12px;line-height:1.5}.event small{font:10px ui-monospace,monospace;color:#6d6056;display:block}
+.footnote{font-size:11px;color:#6d6056;border-top:1px solid #ded3c6;padding-top:15px;margin-top:35px}
+[data-testid=stSidebar]{background:#f0e9df}.stButton button[kind=primary],.stFormSubmitButton button[kind=primary]{background:#a33f26;border-color:#a33f26}
+[data-testid=stHeader]{background:var(--paper);color:var(--ink)}
+[data-testid=stSidebar], [data-testid=stWidgetLabel], [data-testid=stCaptionContainer]{color:var(--ink)!important}
+[data-testid=stWidgetLabel] p, [data-testid=stCaptionContainer] p{color:var(--ink)!important}
+[data-testid=stTextInput] input, [data-testid=stTextArea] textarea,
+[data-baseweb=base-input], [data-baseweb=input], [data-baseweb=textarea],
+[data-baseweb=select]>div{background:#fff!important;color:var(--ink)!important;-webkit-text-fill-color:var(--ink)}
+input::placeholder,textarea::placeholder{color:#62564b!important;-webkit-text-fill-color:#62564b;opacity:1}
+[data-baseweb=select] svg, [data-testid=stTextInput] button{color:var(--ink)!important}
+[data-baseweb=popover], [data-baseweb=popover] ul, [role=listbox], [role=option]{background:#fff!important;color:var(--ink)!important}
+[role=option]:hover, [role=option][aria-selected=true]{background:#f3dfcf!important}
+[data-testid=stButton] button, [data-testid=stLinkButton] a{background:#fff;color:var(--ink);border-color:#b8a797}
+[data-testid=stButton] button[kind=primary], [data-testid=stFormSubmitButton] button[kind=primary]{background:#a33f26;color:#fff}
+[data-testid=stExpander] details{background:var(--paper);border-color:var(--line);color:var(--ink)}
+[data-testid=stExpander] summary,
+[data-testid=stExpander] summary:hover,
+[data-testid=stExpander] details[open]>summary{background:#eee4d8!important;color:var(--ink)!important}
+[data-testid=stExpander] summary p, [data-testid=stExpander] summary svg{color:var(--ink)!important}
+[data-testid=stTable] table, [data-testid=stTable] td{background:#fff!important;color:var(--ink)!important;border-color:var(--line)!important}
+[data-testid=stTable] th{background:#eee4d8!important;color:var(--ink)!important;border-color:var(--line)!important}
+@media(max-width:700px){h1{font-size:2.3rem!important}.brand-note{display:none}.trail{gap:8px}.record{padding:8px}.record-title{font-size:11px}.block-container{padding-top:1.2rem}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>''', unsafe_allow_html=True)
+
+def esc(value):
+    return html.escape(str(value))
+
+services = configured_services()
+engine = Engine(os.environ.get('RECALL_DATA_DIR', str(ROOT / '.runtime' / 'fitness-local')), services, require_review=True)
+if not engine.db.execute('SELECT 1 FROM catalog LIMIT 1').fetchone():
+    engine.seed(FIXTURE)
+engine.purge_expired_requests()
+config = settings(ROOT / '.env')
+notification_config = notification_settings(ROOT / '.env')
+
+with st.sidebar:
+    st.header('Model connection')
+    st.caption('Use your OpenRouter account or an existing LiteLLM proxy. Keys stay in this session or your local .env file.')
+    provider = st.selectbox('Provider', ['openrouter', 'litellm'], index=0 if config['provider']=='openrouter' else 1)
+    default_url = config['base_url'] if provider==config['provider'] else ('https://openrouter.ai/api/v1' if provider=='openrouter' else 'http://localhost:4000/v1')
+    base_url = st.text_input('API base URL', value=default_url, key=f'url_{provider}')
+    api_key = st.text_input('API key', value=config['api_key'], type='password', key=f'key_{provider}')
+    connection_id = hashlib.sha256(json.dumps([provider, base_url.rstrip('/'), api_key]).encode()).hexdigest()
+    catalog_key = f'model_catalog_{connection_id}'
+    if st.button('Load available models', width='stretch'):
+        try:
+            st.session_state[catalog_key] = ModelClient(base_url, api_key, '', provider).models()
+        except ModelError as exc:
+            st.error(str(exc))
+    available = st.session_state.get(catalog_key, [])
+    if available:
+        st.caption(f'{len(available)} tool-capable models loaded. Select a model for each role below.')
+    elif catalog_key in st.session_state:
+        st.warning('The provider returned no tool-capable models. Enter a model ID below or check the connection.')
+    else:
+        st.caption('Load available models to browse the catalog, or type a model ID into any picker below.')
+    defaults = config.get('models', {}) if provider == config['provider'] else {}
+    role_models = {}
+    for role, label in [('investigator', 'Investigator'), ('scope_reviewer', 'Scope reviewer'), ('judge', 'LLM judge'), ('auditor', 'Outcome auditor')]:
+        key = f'{provider}_{role}_model'
+        default = defaults.get(role, '')
+        current = st.session_state.get(key, default)
+        options = list(dict.fromkeys(value for value in [current, default, *available] if value))
+        role_models[role] = st.selectbox(
+            label + ' model', options, index=options.index(current) if current in options else None,
+            key=key, accept_new_options=True, placeholder='Select or enter a model ID',
+            help='Choose from the loaded catalog, or type a custom model ID and press Enter.',
+        ) or ''
+    model = role_models['investigator']
+    st.caption('Three agent roles plus a separate judge. At most two repair rounds; each investigation has bounded reads.')
+    st.divider()
+    st.subheader('Demo controls')
+    mode = st.radio('Investigation mode', ['Live agent', 'Guided rehearsal'], help='Rehearsal is a scripted fixture path; it does not call a model.')
+    fault = st.selectbox('Execution scenario', ['Healthy services', 'Member Offers offline', 'Search service offline', 'One temporary search failure', 'Lost delete response', 'Worker restart after one deletion'])
+    reset_ok = st.checkbox('Reset all local synthetic data and request history')
+    if st.button('Reset demo', disabled=not reset_ok, width='stretch'):
+        try:
+            engine.seed(FIXTURE)
+        except ConnectionError:
+            st.error('Start all three applications before resetting the connected demo.')
+            st.stop()
+        for key in ['conversation', 'agent_trace', 'agent_message', 'replay_result', 'needs_clarification']:
+            st.session_state.pop(key, None)
+        st.rerun()
+    st.caption('Single-user local demo • Avery Example (U1). No production sign-in.')
+    st.caption('Status notifications: ' + (notification_config['provider'] + ' enabled' if notification_config['enabled'] else 'disabled; configure in .env'))
+
+st.markdown('<div class="brand"><span class="brand-symbol">↩</span> Recall <span class="brand-note">Consent has an undo button · working demo</span></div>', unsafe_allow_html=True)
+st.markdown('<div class="kicker">Your information. Your decision.</div>', unsafe_allow_html=True)
+st.title('You deleted the form.\nWho still remembers?')
+st.markdown('<p class="lede">Your club questionnaire can live on as class preferences, an audience label, and a queued offer. Follow the evidence and take back your consent.</p>', unsafe_allow_html=True)
+if mode=='Guided rehearsal':
+    st.warning('Guided rehearsal — the investigation is scripted. Deletions, recovery, verification, and replay protection use the real local stores.')
+else:
+    st.caption(f"Live agent team · {model or 'select a model in the sidebar'} · {provider}")
+
+if services:
+    links = st.columns(3)
+    for col, (service, label) in zip(links, [('documents','1 · Club Portal'), ('search','2 · Class Booking'), ('personalization','3 · Member Offers')]):
+        col.link_button(label, services.urls[service], width='stretch')
+    consent_state = engine.consent_status(USER)
+    st.caption('Sharing consent: ' + consent_state['state'].replace('_', ' '))
+    if consent_state['state'] == 'not_granted':
+        st.info('Start in Club Portal: give consent, see the other apps personalize, then delete your questionnaire. Return here to investigate what remains.')
+else:
+    st.info('Local rehearsal stores. For three independent customer apps and consent-first onboarding, start with: python3 run_demo.py')
+
+clients = {role: ModelClient(base_url, api_key, selected, provider) for role, selected in role_models.items()}
+ready = bool(all(role_models.values()) and (api_key or provider=='litellm'))
+root_exists = bool(engine.db.execute("SELECT 1 FROM catalog WHERE id='D1' AND user_id=?", (USER,)).fetchone())
+
+def run_audit(request_id):
+    if mode == 'Live agent' and ready:
+        with st.spinner('Outcome auditor is checking the customer experience…'):
+            try:
+                audit_outcome(engine, clients, USER, request_id)
+                current = engine.get_request(request_id, USER)
+                current.pop('audit_error', None)
+                engine.save(current)
+            except (ModelError, BoundaryError) as exc:
+                current = engine.get_request(request_id, USER)
+                current['audit_error'] = str(exc)
+                engine.save(current)
+    else:
+        engine.verify_withdrawal(request_id, USER)
+
+left, right = st.columns([1.8, 1], gap='large')
+with left:
+    st.markdown('<div class="case-label">CASE SUBJECT / AVERY EXAMPLE · SYNTHETIC DATA</div>', unsafe_allow_html=True)
+    with st.form('request_form'):
+        request_text = st.text_area('What would you like withdrawn?', value='Withdraw my fitness-personalization consent for questionnaire D1. Remove its shared interests, recommendations and queued offers. Keep my paid class booking.', height=90)
+        submit = st.form_submit_button('Investigate data trail' if mode=='Live agent' else 'Prepare scripted sample plan', type='primary', disabled=not root_exists or (mode=='Live agent' and not ready), width='stretch')
+    if mode=='Live agent' and not ready:
+        st.info('Open the sidebar to connect OpenRouter or LiteLLM and select a model. You can also populate the local .env file.')
+    if submit:
+        try:
+            if mode=='Guided rehearsal':
+                result = deterministic_rehearsal(engine, USER)
+                st.session_state['needs_clarification'] = result['action'] != 'propose'
+                st.session_state['agent_message'] = result['message']
+            else:
+                with st.status('Investigating authorized records…', expanded=True) as status:
+                    def progress(entry):
+                        if 'role' in entry:
+                            st.write(f"**{entry['role'].replace('_', ' ').title()}** · {entry.get('message', entry.get('result', ''))}")
+                            return
+                        label = {'discover_records':'Discovering records', 'trace_lineage':'Tracing dependencies', 'inspect_service':'Inspecting service state'}.get(entry['tool'], entry['tool'])
+                        st.write(f"{label} · {', '.join(str(v) for v in entry['arguments'].values())}")
+                    result = review_plan(engine, clients, USER, request_text, on_event=progress)
+                    st.session_state['needs_clarification'] = result['action'] != 'propose'
+                    st.session_state['agent_message'] = result['message']
+                    st.session_state['agent_trace'] = result['trace']
+                    st.session_state.setdefault('conversation', []).extend([
+                        {'role':'user','content':request_text}, {'role':'assistant','content':result['message']}])
+                    status.update(label='Review ready' if result['action']=='propose' else 'Your clarification is needed', state='complete', expanded=False)
+        except (BoundaryError, ModelError) as exc:
+            st.session_state['needs_clarification'] = True
+            st.error(str(exc))
+    if st.session_state.get('agent_message'):
+        st.info(st.session_state['agent_message'])
+    req = engine.latest(USER)
+    st.subheader('The evidence trail')
+    trail = engine.trace_lineage(USER, 'D1') if root_exists else {'records': [], 'edges': []}
+    displayed = req['targets'] if req else trail['records']
+    parts = []
+    labels = {'documents':'Club Portal', 'search':'Class Booking', 'personalization':'Member Offers'}
+    for service in ['documents','search','personalization']:
+        cards = []
+        for rec in displayed:
+            if rec['service'] != service:
+                continue
+            state = engine.inspect_service(USER, rec['id'])['state']
+            label = {'present':'Present', 'absent':'Verified absent', 'unknown':'Unable to verify'}[state]
+            cards.append(f'<div class="record"><div class="record-id">{esc(rec["id"])} · v{rec["version"]}</div><div class="record-title">{esc(rec["title"])}</div><span class="badge {state}">{label}</span></div>')
+        parts.append(f'<div class="lane"><div class="lane-title">{labels[service]}</div>{"".join(cards)}</div>')
+    st.markdown('<div class="trail">'+''.join(parts)+'</div>', unsafe_allow_html=True)
+    with st.expander('Inspect the actual source-to-copy links'):
+        edges = req['edges'] if req else trail['edges']
+        st.table(edges)
+        st.caption('Arrows in the service overview show processing stages. This table contains the actual dependency edges.')
+    with st.expander('Test what the application can still retrieve', expanded=True):
+        query = st.text_input('Search synthetic information', value='evening yoga')
+        hits = engine.search(USER, query) if query.strip() else []
+        st.caption(f'{len(hits)} accessible matching records · lexical search over active stores')
+        for hit in hits:
+            st.write(f"**{hit['id']} · {hit['service']}** — {hit['text']}")
+        if not hits:
+            st.write('No accessible matches. An offline service is excluded; the receipt remains the source of verification status.')
+    if req:
+        with st.expander('Agent read-tool evidence'):
+            trace = req.get('investigation', st.session_state.get('agent_trace', []))
+            if trace:
+                st.json(trace)
+            else:
+                st.caption('No live model trace exists for this scripted rehearsal.')
+
+with right:
+    req = engine.latest(USER)
+    if req:
+        notification = notify_withdrawal_status(engine, USER, req['id'], notification_config)
+        if notification['result'] == 'configuration_required':
+            st.warning('Notifications need valid provider settings in .env.')
+        req = engine.get_request(req['id'], USER)
+        verified = sum(t['verification']=='absent' for t in req['targets'])
+        total = len(req['targets'])
+        complete = req['status']=='complete'
+        label = {'awaiting_approval':'Awaiting your approval','approved':'Approved','executing':'In progress','partial':'Partial withdrawal','complete':'Withdrawal verified','interrupted':'Ready to resume','needs_new_plan':'New approval needed','approval_revoked':'Approval revoked'}.get(req['status'],req['status'])
+        st.markdown(f'<div class="receipt"><div class="receipt-title">Withdrawal receipt / {esc(req["id"])}</div><div class="stamp {"" if complete else "pending"}">{esc(label.upper())}</div><div class="receipt-number">{verified} / {total}</div><p class="receipt-copy">records independently verified absent</p><p class="receipt-copy">{esc(req["scope"])}</p></div>', unsafe_allow_html=True)
+        st.caption('Live model investigation' if req['origin']=='live_agent' else 'Scripted rehearsal · no model investigation')
+        gate = req.get('evaluation', {})
+        if gate:
+            st.write('**Before your approval**')
+            st.caption(f"Evaluation: {gate.get('verdict', 'pending')} · {gate.get('mode', 'live')} · {gate.get('rounds', 0)} review rounds")
+            with st.expander('Review findings and corrections', expanded=gate.get('verdict') != 'pass'):
+                for review in req.get('reviews', []):
+                    st.write(f"**{review['role'].replace('_', ' ').title()} · {review['status']}**")
+                    st.write(review['explanation'])
+                    for finding in review['findings']:
+                        st.caption(finding['explanation'] + ' · Evidence: ' + ', '.join(finding['references']))
+                if not req.get('reviews'):
+                    st.write('Scripted checks only; no model review.' if gate.get('mode') == 'deterministic_rehearsal_no_llm' else 'Model review has not completed.')
+                if gate.get('verdict') != 'pass':
+                    for finding in gate.get('findings', []):
+                        st.write(finding.get('explanation', str(finding)) if isinstance(finding, dict) else finding)
+        if req['status'] in ['under_review', 'review_blocked', 'blocked']:
+            st.warning('This proposal has not passed review. Resolve the findings and investigate again; approval is unavailable.')
+        if req['status']=='awaiting_approval':
+            st.write('**Review the exact change**')
+            if st.session_state.get('needs_clarification'):
+                st.warning('This is an earlier preview. Resolve your latest clarification before approving a new plan.')
+            st.table([{'Record':t['id'],'Service':t['service'],'Version':t['version']} for t in req['targets']])
+            st.caption('Approval withdraws the selected sharing consent and blocks these stable IDs from re-ingestion. Up to two retries per record; approval expires after 24 hours. Deletion cannot be undone.')
+            consent = st.checkbox('I approve these deletions and re-ingestion blocks', key=f'approve_{req["id"]}')
+            if st.button('Approve & withdraw', type='primary', disabled=not consent or st.session_state.get('needs_clarification',False), width='stretch'):
+                try:
+                    engine.approve(req['id'], USER)
+                    engine.clear_faults()
+                    if fault=='Member Offers offline':
+                        engine.set_fault('personalization')
+                    elif fault=='Search service offline':
+                        engine.set_fault('search')
+                    elif fault=='One temporary search failure':
+                        engine.set_fault('search','fail_before_commit',1)
+                    elif fault=='Lost delete response':
+                        engine.set_fault('search','commit_then_timeout',1)
+                    engine.delete_approved_records(req['id'],USER,stop_after=1 if fault=='Worker restart after one deletion' else None)
+                    if fault != 'Worker restart after one deletion':
+                        run_audit(req['id'])
+                    st.rerun()
+                except BoundaryError as exc:
+                    st.error(str(exc))
+        elif req['status'] in ['partial','interrupted','approved','executing']:
+            st.warning('Some work is unfinished. Completed records and approval are saved; refresh or restart will preserve them.')
+            exhausted = any(t['attempts']>=3 and t['verification']!='absent' for t in req['targets'])
+            if exhausted:
+                st.info('The approved retry allowance is exhausted. Start a fresh investigation and approve a new plan to authorize more attempts.')
+            if st.button('Restore demo services & resume',type='primary',disabled=exhausted,width='stretch'):
+                try:
+                    engine.clear_faults()
+                    engine.delete_approved_records(req['id'],USER)
+                    run_audit(req['id'])
+                    st.rerun()
+                except BoundaryError as exc:
+                    st.error(str(exc))
+            if st.button('Revoke further attempts',width='stretch'):
+                engine.revoke(req['id'],USER)
+                st.rerun()
+        elif req['status'] in ['needs_new_plan','approval_revoked']:
+            st.info('Start a fresh investigation and review a new plan before further changes.')
+        elif complete:
+            st.success('Every approved target is verified absent from the connected local stores.')
+            if st.button('Replay an old search-index job',width='stretch'):
+                rec = next(r for r in FIXTURE['records'] if r['id']=='V1')
+                st.session_state['replay_result'] = engine.replay_ingestion(USER,rec)
+            if st.session_state.get('replay_result'):
+                replay = st.session_state['replay_result']
+                if replay['result']=='blocked':
+                    st.success('Re-ingestion blocked. V1 stays absent.')
+                else:
+                    st.info('V1 was outside this withdrawal scope and was inserted.')
+            if st.button('Verify again',width='stretch'):
+                run_audit(req['id'])
+                st.rerun()
+        if req.get('behavior_checks'):
+            st.write('**Customer experience checks**')
+            check_labels = {'consent:D1': 'Personalization consent withdrawn', 'surface:documents': 'Club Portal copies removed and reuse blocked',
+                            'surface:search': 'Class personalization removed and reuse blocked',
+                            'surface:personalization': 'Personalized offers removed and reuse blocked', 'preserved:B1': 'Paid class booking preserved'}
+            for check in req['behavior_checks']:
+                st.write(f"{'✓' if check['result']=='pass' else '…'} {check_labels.get(check['id'], check['id'])} — {check['result']}")
+        if req.get('outcome_audit'):
+            with st.expander('Outcome auditor findings', expanded=True):
+                audit = req['outcome_audit']
+                st.write(f"**{audit['verdict'].title()}** · {audit['explanation']}")
+                for finding in audit.get('findings', []):
+                    st.write(finding['explanation'])
+        if req.get('audit_error'):
+            st.warning('Model auditor unavailable. Deterministic verification is shown; the model audit remains unfinished.')
+        st.download_button('Download verification receipt',json.dumps(req,indent=2),file_name=f'recall-{req["id"]}.json',mime='application/json',width='stretch')
+        with st.expander('Execution timeline',expanded=req['status'] in ['partial','complete','interrupted']):
+            events = ''.join(f'<div class="event"><small>{datetime.fromtimestamp(e["time"]).strftime("%H:%M:%S")} · {esc(e.get("record_id") or "request")}</small>{esc(e["message"])}</div>' for e in req['events'])
+            st.markdown('<div class="timeline">'+events+'</div>',unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="receipt"><div class="receipt-title">Your control point</div><h3>Nothing leaves without your approval.</h3><p class="receipt-copy">The agent will inspect the trail and prepare an exact change for you to review. Reads happen autonomously; deletion waits here.</p><hr><p class="receipt-copy">Questionnaire → class preferences → queued offer<br>One request. A verifiable outcome.</p></div>',unsafe_allow_html=True)
+    with st.expander('What stays untouched?'):
+        for rid in ['B1','D2','V3']:
+            item=engine.inspect_service(USER,rid)
+            st.write(f"**{rid}** · {item['title']} · {item['state']}")
+        st.caption('Another synthetic user has matching text. User-scoped tools do not expose their records; automated tests verify they remain untouched.')
+
+with st.expander('Agent goal and framework'):
+    st.markdown((ROOT/'docs/FRAMEWORK.md').read_text())
+st.markdown('<div class="footnote">Synthetic data · three local service stores · real local deletion and verification · no external deletion or model unlearning. Workflow metadata expires after 24 hours; lineage and withdrawal markers remain until explicit demo reset. A live investigation sends authorized metadata and your request to your selected model provider.</div>',unsafe_allow_html=True)
+engine.close()
