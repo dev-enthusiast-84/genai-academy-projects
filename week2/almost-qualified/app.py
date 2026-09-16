@@ -25,7 +25,7 @@ st.markdown(
       --aq-red: #9b4242;
     }
     .stApp {
-      background: linear-gradient(90deg, #fbfaf8 0 28%, #f4eee8 28% 29%, #fbfaf8 29% 100%);
+      background: #fbfaf8;
       color: var(--aq-ink);
     }
     .block-container {
@@ -78,23 +78,23 @@ def configure_model() -> tuple[object | None, str, bool]:
     labels = [item.display_name for item in MODEL_CATALOG]
     default_label = labels[0]
     with st.sidebar:
-        st.header("Model")
-        selected = st.selectbox("Provider and model", labels, index=labels.index(default_label))
-        advanced = st.toggle("Edit model ID")
-        custom_model = ""
-        if advanced:
-            custom_model = st.text_input("Model ID", value=resolve_model(selected).model_id)
-        option = resolve_model(selected, custom_model.strip() or None)
-        use_model = st.toggle("Use model assessment", value=bool(option), help="Turn off to test retrieval without API calls.")
-        temporary_key = st.text_input("Temporary API key", type="password", help="Kept only for this browser session.")
-        api_key, key_source = get_api_key(option, temporary_key)
-        st.caption(f"Key source: {key_source}")
-        if st.button("Check model"):
-            ok, message = check_model_ready(option, api_key)
-            st.session_state.model_check = (ok, message)
-        if "model_check" in st.session_state:
-            ok, message = st.session_state.model_check
-            (st.success if ok else st.warning)(message)
+        with st.expander("⚙️ Model Settings", expanded=True):
+            selected = st.selectbox("Provider and model", labels, index=labels.index(default_label))
+            advanced = st.toggle("Edit model ID")
+            custom_model = ""
+            if advanced:
+                custom_model = st.text_input("Model ID", value=resolve_model(selected).model_id)
+            option = resolve_model(selected, custom_model.strip() or None)
+            use_model = st.toggle("Use model assessment", value=bool(option), help="Turn off to test retrieval without API calls.")
+            temporary_key = st.text_input("Temporary API key", type="password", help="Kept only for this browser session.")
+            api_key, key_source = get_api_key(option, temporary_key)
+            st.caption(f"Key source: {key_source}")
+            if st.button("Check model"):
+                ok, message = check_model_ready(option, api_key)
+                st.session_state.model_check = (ok, message)
+            if "model_check" in st.session_state:
+                ok, message = st.session_state.model_check
+                (st.success if ok else st.warning)(message)
     return option, api_key, use_model
 
 
