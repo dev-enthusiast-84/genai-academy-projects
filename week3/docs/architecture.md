@@ -1,338 +1,62 @@
 # Architecture
 
-A deep dive into Recall's system design and components.
+Recall's primary implementation is the connected Python app. LangGraph coordinates review and execution, while application code enforces authorization and durable recovery.
 
-## System Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Recall Dashboard (Streamlit)             │
-│                     http://127.0.0.1:8501                  │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Engine & Workflow Logic                  │
-│  (Core consent, withdrawal, verification, audit)           │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-        ▼                  ▼                  ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ LLM Agents   │  │ Service APIs │  │ Local SQLite │
-│ (Direct API)    │  │ (Flask)      │  │ Database     │
-└──────────────┘  └──────────────┘  └──────────────┘
-        │                  │
-    Provider API    3 Customer Services
+```mermaid
+flowchart TD
+    Member[Member in Recall] --> Investigator[Model investigator: choose read tools]
+    Investigator --> Reads[Discover / trace / inspect]
+    Reads --> Investigator
+    Investigator -->|ambiguous| Clarify[Ask member; no plan approval]
+    Investigator --> Checks[Deterministic scope checks]
+    Checks --> Review[Scope reviewer and separate judge]
+    Review -->|revise: at most twice| Investigator
+    Review -->|pass| Human[Exact human approval]
+    Human --> Executor[Guarded withdrawal executor]
+    Executor --> Services[Three independent HTTP service stores]
+    Services --> Verify[Independent presence and behavior checks]
+    Verify --> Audit[Outcome auditor]
+    Audit --> Receipt[Complete or unresolved receipt]
 ```
 
-## Component Architecture
+## Components
 
-### 1. Frontend Layer
+| File | Responsibility |
+| --- | --- |
+| `app.py` | Streamlit form, provider selection, approval, readable evidence, receipt and recovery controls |
+| `withdrawal/agent.py` | Direct OpenAI/OpenRouter client and bounded model-selected read-tool loop |
+| `withdrawal/review.py` | LangGraph review stages, conditional repair edges, hard checks, separate judge and outcome audit |
+| `withdrawal/workflow.py` | LangGraph approved execution → verification/audit; interrupted execution stops before audit |
+| `withdrawal/core.py` | SQLite workflow state, authorization hash, consent/suppression, dependency order, retries, verification |
+| `withdrawal/service_app.py` | Standard-library HTTP server, one SQLite store and customer page per service |
+| `withdrawal/services.py` | Authenticated HTTP adapter; no direct cross-service database access |
+| `withdrawal/mcp_server.py`, `mcp_client.py` | Optional official MCP SDK read transport; no model write tools |
+| `withdrawal/notifications.py` | Optional fixed-destination Slack status notification, deduplicated before network I/O |
+| `run_demo.py`, `withdrawal/manage.py` | Start customer servers/dashboard, propagate scoped configuration, stop owned processes |
+| `site/` | Separate browser demo with simulated stores and one model investigator |
 
-**Streamlit Dashboard** (`app.py`)
-- Reactive UI for investigation & withdrawal
-- Model selection & configuration
-- Real-time progress tracking
-- Receipt & verification display
+The running customer services use `ThreadingHTTPServer`, not Flask. Each listens on loopback and owns a SQLite file; the default connected data root is `.runtime/fitness`, with `applications/` and `recall/` subdirectories. The standalone engine used in tests can instead own local store files without HTTP.
 
-### 2. Engine Layer
+## Graph boundaries
 
-**Core Engine** (`withdrawal/core.py`)
-- Manages consent state
-- Coordinates deletion workflow
-- Enforces approval gates
-- Tracks request lifecycle
+The review graph is investigator → hard checks → scope reviewer → judge → decision. A revision routes through a repair node back to investigation, at most twice. Clarification, failed checks, or malformed model output stop approval. Node names are saved in request telemetry with `framework: langgraph`.
 
-### 3. LLM Agent Layer
+The review graph ends at the persisted approval boundary. The existing UI obtains explicit approval, and the execution graph calls Engine's guarded executor before verification/audit. Resume reads the saved request and retry counters from SQLite. There is no parallel execution, automatic graph retry around deletes, or second graph checkpoint database. An interrupted investigation must be prepared again; approved execution can resume through the existing controls. Direct Verify again still runs verification/audit without executing deletion.
 
-**ModelClient** (`withdrawal/agent.py`)
-- Communicates directly with OpenAI or OpenRouter
-- Defines tool schemas for agents
-- Handles model errors gracefully
+The outcome auditor receives the approved target list and fresh states; retained catalog metadata does not imply retained service data. Preserved IDs overlapping removed targets are rejected.
 
-**Four Agent Roles:**
+## State and approval
 
-```
-┌──────────────────────────────────────────────────┐
-│          Investigation Workflow                  │
-├──────────────────────────────────────────────────┤
-│                                                  │
-│  1. Investigator Agent                          │
-│     ├─ discover_records()                       │
-│     ├─ trace_lineage()                          │
-│     └─ inspect_service()                        │
-│                                                  │
-│  2. Scope Reviewer Agent                        │
-│     └─ Review & challenge findings              │
-│                                                  │
-│  3. Judge Agent                                 │
-│     └─ Evaluate proposal against evidence       │
-│                                                  │
-│  4. Auditor Agent (post-deletion)               │
-│     └─ Verify outcomes & report findings        │
-│                                                  │
-└──────────────────────────────────────────────────┘
-```
+The workflow SQLite tables are `catalog`, `edges`, `requests`, `suppression`, `faults`, `consent`, and `notifications`. Targets, reviews, events, approval and verification are nested in each request's JSON payload; they are not independent SQL tables.
 
-### 4. Service Integration Layer
+Approval hashes the exact roots, target IDs/services/versions, edges, scope, consent roots and retry limit, and expires after 24 hours. Before writes the engine checks approval, current lineage and accessible versions; a changed scope requires a new plan. It writes local consent withdrawal and suppression, attempts service-level blocks, deletes dependents before ancestors, and verifies presence independently.
 
-**HttpServices** (`withdrawal/services.py`)
-- Proxies requests to three local Flask apps
-- Enforces user-scoped access
-- Returns authorized record metadata
+At most three delete attempts are made per target. A lost response triggers inspection before retry. An offline service is unknown and leaves the result partial; an outcome auditor cannot upgrade failed checks. One unresolved auditor finding also leaves the combined outcome unresolved.
 
-**Service Endpoints:**
+Request payload cleanup occurs when the app runs and removes requests older than 24 hours from creation; it is not a background erasure service. Consent, lineage and suppression remain until reset. Local `.env` credentials persist on disk; they are not written into workflow receipts. Separate submitted investigations do not replay past conversation; bounded repair context is passed within a review run.
 
-```
-Club Portal (8101)
-├─ GET /catalog          → List records
-├─ GET /record/{id}      → Read record
-├─ DELETE /record/{id}   → Delete record
-└─ GET /health           → Service status
+## Scope limits
 
-Class Booking (8102)
-├─ GET /catalog
-├─ GET /record/{id}
-├─ DELETE /record/{id}
-└─ GET /health
+Synthetic single-user identity U1; no production login or tenant isolation service. Tool metadata omits source content, but the customer pages and lexical search display synthetic content, and requests/model explanations may be sensitive. The notification tool sends fixed status text only, after explicit operator opt-in; it does not send the queued invitation.
 
-Member Offers (8103)
-├─ GET /catalog
-├─ GET /record/{id}
-├─ DELETE /record/{id}
-└─ GET /health
-```
-
-### 5. Model provider layer
-
-ModelClient calls OpenAI or OpenRouter directly over HTTPS. Each role has a configurable model; the judge must differ from the investigator. No local model server is started.
-
-### 6. Data Layer
-
-**SQLite Database** (`.runtime/fitness-local/recall/recall.db`)
-
-```sql
--- Main tables
-catalog              -- Records accessible to user
-requests             -- Withdrawal requests
-targets              -- Records targeted for deletion
-edges                -- Dependencies between records
-reviews              -- LLM agent findings
-```
-
-## Data Flow
-
-### Investigation Flow
-
-```
-User Request
-    ↓
-investigator.discover_records("D1")
-    ↓ (calls LLM)
-Configured provider API
-    ↓
-Tool Response: [List of records]
-    ↓
-investigator.trace_lineage("D1")
-    ↓ (calls LLM)
-Configured provider API
-    ↓
-Tool Response: [Dependency graph]
-    ↓
-investigator.inspect_service("V1")
-    ↓ (calls LLM)
-Configured provider API
-    ↓
-Tool Response: [Record state: present/absent/unknown]
-    ↓
-scope_reviewer.review_plan(findings)
-    ↓ (calls LLM)
-Configured provider API
-    ↓
-Review: [Approve/Challenge with findings]
-    ↓
-Workflow Continues or Loops
-```
-
-### Deletion Flow
-
-```
-User Approval
-    ↓
-engine.approve(request_id)
-    ↓
-For Each Target Record:
-  delete_approved_records()
-    ├─ Verify approval
-    ├─ Check pre-conditions
-    ├─ Call service DELETE
-    └─ Retry up to 3x
-    ↓
-audit_outcome(request_id)
-    ├─ Call auditor agent
-    └─ Verify via inspect_service()
-    ↓
-Mark Complete
-```
-
-## Agent Tools
-
-### Investigator Tools
-
-```python
-discover_records(query)
-  - Read authorized record metadata
-  - Search by ID, title, service, kind
-  - No document content returned
-
-trace_lineage(root_id)
-  - Read explicit dependency graph
-  - Follow source relationships
-  - Return edges and nodes
-
-inspect_service(record_id)
-  - Check current record presence
-  - Return version and state
-  - Unavailable services return 'unknown'
-```
-
-### Workflow Tools
-
-```python
-# Only accessible after approval
-delete_approved_records(request_id, user)
-  - Delete targeted records
-  - Enforce approval gates
-  - Support bounded retries
-
-verify_withdrawal(request_id, user)
-  - Post-deletion verification
-  - Check absence via inspect_service
-  - Run behavior checks
-
-notify_withdrawal_status(engine, user, request_id, config)
-  - Optional email/Slack notification
-  - Triggered on status changes
-```
-
-## Configuration
-
-### Environment Variables
-
-```env
-# LLM Provider Configuration
-LLM_PROVIDER=openrouter
-LLM_BASE_URL=https://openrouter.ai/api/v1
-OPENROUTER_API_KEY=your-key
-
-# Role-specific Models
-LLM_INVESTIGATOR_MODEL=openai/gpt-5.4-mini
-LLM_SCOPE_REVIEWER_MODEL=anthropic/claude-sonnet-4.6
-LLM_JUDGE_MODEL=anthropic/claude-sonnet-4.6
-LLM_AUDITOR_MODEL=openai/gpt-5.4-mini
-
-# Optional Features
-NOTIFICATION_ENABLED=false
-RECALL_TOOL_TRANSPORT=http
-```
-
-## Performance Characteristics
-
-### Latency (typical)
-
-| Operation | Time | Factor |
-|-----------|------|--------|
-| LLM inference (phi) | 5-10s | Model size |
-| LLM inference (orca-mini) | 10-20s | Model size + reasoning |
-| Service call | 50-100ms | Network I/O |
-| Database query | 10-50ms | Index usage |
-| Deletion operation | 200-500ms | Cascading updates |
-
-### Throughput
-
-- **Concurrent requests**: 1 (designed for single user)
-- **Requests per hour**: 10-20 (typical)
-- **Models per hour**: ~2-3 complete workflows
-
-## Security Considerations
-
-### Authentication
-
-- Single-user demo (U1 - Avery Example)
-- No sign-in required
-- User ID hardcoded in app.py
-
-### Authorization
-
-- User-scoped service queries
-- Explicit approval gates
-- Tools only accessible in correct workflow state
-
-### Data Protection
-
-- Local-only operation
-- No external network calls
-- No model training on data
-- SQLite database on disk
-
-## Scalability Notes
-
-**Current Design**
-
-- Single-user, single-process
-- In-memory model inference
-- Synchronous workflow execution
-
-**Bottlenecks**
-
-- LLM inference latency (30-50s per investigation)
-- Model GPU memory (if using GPU)
-- SQLite concurrency limits
-
-**For Production**
-
-Would need:
-- Multi-user authentication
-- Async task queues (Celery, RQ)
-- Distributed LLM serving (vLLM, Ray)
-- PostgreSQL or similar
-- Request rate limiting
-
-## Extension Points
-
-### Adding New Services
-
-1. Create Flask app on new port
-2. Register in `withdrawal/services.py`
-3. Implement GET /catalog, /record/{id}, DELETE endpoints
-4. Add to `PORTS` dictionary
-
-### Customizing Models
-
-Edit `.env`:
-```env
-LLM_INVESTIGATOR_MODEL=openai/gpt-5.4-mini
-```
-
-Use **Load available models** in the sidebar to check provider access.
-
-### Adding New Tools
-
-1. Define in `withdrawal/agent.py` (TOOLS list)
-2. Implement handler in engine
-3. Add to agent's allowed tool set
-
-### Custom Notifications
-
-Configure in `.env`:
-```env
-NOTIFICATION_ENABLED=true
-NOTIFICATION_PROVIDER=slack
-NOTIFICATION_WEBHOOK_URL=...
-```
-
----
-
-**Next**: [Configuration Guide](configuration.md) | [API Reference](api.md)
+No external queue sender, embeddings/vector database, backup deletion, external SaaS deletion, or model unlearning is implemented. Stable-ID ingestion blocks apply only to the controlled demo paths. The hosted app shares one origin/localStorage across its pages and cannot establish backend security or independent service availability.

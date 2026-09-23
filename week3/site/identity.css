@@ -1,0 +1,17 @@
+/* Shared identities used in the pitch, dashboard and customer apps. */
+.recall-app-identity{display:inline-flex;align-items:center;gap:10px;vertical-align:middle;color:var(--identity-color);font:600 15px/1.3 Arial,sans-serif}
+.recall-app-icon{display:inline-flex;align-items:center;justify-content:center;background:var(--identity-color);border-radius:10px;width:40px;height:40px;flex-shrink:0}
+.recall-app-icon img{width:28px;height:28px;display:block}
+.recall-app-identity .identity-name{color:inherit!important;-webkit-text-fill-color:currentColor!important}
+.recall-persona{display:flex;align-items:center;gap:16px;padding:14px 18px;margin:14px 0 20px;background:#fff;border:1px solid #d8d3c5;border-radius:12px;color:#292b27;font:14px/1.45 Arial,sans-serif;text-align:left}
+.recall-persona .persona-avatar{width:64px;height:64px;flex-shrink:0;border-radius:50%}
+.recall-persona .persona-name{font-size:20px;font-weight:700;color:#292b27}
+.recall-persona .persona-label{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:#6d6056}
+.recall-persona .persona-facts{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+.recall-persona .persona-fact{padding:5px 10px;border-radius:5px;background:#f6f5f0;color:#4a473e}
+.recall-persona .persona-fact strong{display:block;font-size:10px;letter-spacing:.05em;color:#6d6056}
+@media(max-width:700px){.recall-persona{flex-wrap:wrap;padding:12px}.recall-persona .persona-facts{margin-left:0;width:100%}.recall-app-identity{font-size:14px}}
+
+body> .recall-persona{max-width:800px;margin:18px auto}
+.window-bar .recall-app-icon{width:24px;height:24px;border-radius:6px}.window-bar .recall-app-icon img{width:18px;height:18px}.window-bar .recall-app-identity{font-size:12px;gap:6px}
+.compact> .recall-persona{margin:10px 16px;padding:8px;gap:10px}.compact> .recall-persona .persona-avatar{width:40px;height:40px}.compact> .recall-persona .persona-name{font-size:16px}.compact> .recall-persona .persona-facts{display:none}

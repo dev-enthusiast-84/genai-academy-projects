@@ -17,10 +17,10 @@ class MCPReads:
     async def _run(self, name=None, arguments=None):
         try:
             from mcp import ClientSession
-            from mcp.client.streamable_http import streamablehttp_client
+            from mcp.client.streamable_http import streamable_http_client
         except ImportError:
             raise BoundaryError('Install requirements-mcp.txt before selecting MCP transport.') from None
-        async with streamablehttp_client(self.url) as (read, write, _):
+        async with streamable_http_client(self.url) as (read, write, _):
             async with ClientSession(read, write) as session:
                 await session.initialize()
                 if name is None:

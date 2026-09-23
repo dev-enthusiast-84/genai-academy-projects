@@ -1,181 +1,19 @@
-# Recall - Consent Management Dashboard
+# Recall documentation
 
-Welcome to Recall, a privacy-first demonstration of data withdrawal consent management using LLM-powered investigation.
+Start with the [project README](../README.md) for installation, app addresses, and commands.
 
-> **Consent has an undo button** — Withdraw your data and verify it's actually gone.
+| Need | Maintained document |
+|---|---|
+| Provider settings, reset, troubleshooting, recovery | [Configuration](configuration.md) |
+| Agent goal, boundaries, local/hosted differences | [Framework](FRAMEWORK.md) |
+| LangGraph, services, state and approval design | [Architecture](architecture.md) |
+| Python interfaces and service routes | [API](api.md) |
+| Test results, live-model evidence and limitations | [Evaluation](EVALUATION.md) |
+| Preview and publish the static app | [Deployment](deployment.md) |
+| Run the hosted-style demonstration | [Browser app guide](../site/README.md) |
+| Record the application walkthrough | [Three-minute demo script](demo-script-3-min.md) |
+| Present the deck, read narration, rebuild artifacts | [Two-minute speaker script](pitch/speaker-script.md) |
+| Prepare remaining submission deliverables | [Submission draft](SUBMISSION.md) |
+| Change the project | [Contributing](../CONTRIBUTING.md) |
 
-## What is Recall?
-
-Recall is a working demonstration that shows how modern privacy-first systems can:
-
-- 🔍 **Investigate** data dependencies across distributed services
-- 📋 **Review** withdrawal proposals with multiple LLM agents
-- ✅ **Verify** that data is actually deleted
-- 🛡️ **Block** re-ingestion after withdrawal
-
-## Quick Links
-
-- **[Getting Started](getting-started.md)** — Installation & first run
-- **[Architecture](architecture.md)** — System design & components
-- **[API Reference](api.md)** — LLM agents & tool definitions
-- **[Configuration](configuration.md)** — Environment setup
-- **[Troubleshooting](troubleshooting.md)** — Common issues & fixes
-- **[Contributing](contributing.md)** — Development guide
-
-## Key Features
-
-### 🤖 Multi-Agent LLM System
-
-Four specialized LLM agents work together:
-
-| Agent | Role | Model |
-|-------|------|-------|
-| **Investigator** | Discovers records, traces lineage | phi (2.7B) |
-| **Scope Reviewer** | Reviews proposals, challenges assumptions | orca-mini (3B) |
-| **Judge** | Evaluates proposals against evidence | phi (2.7B) |
-| **Auditor** | Verifies outcomes, reports findings | phi (2.7B) |
-
-### 🏗️ Distributed Services
-
-Three independent customer applications demonstrate data sharing:
-
-- **Club Portal** — Member questionnaires & preferences
-- **Class Booking** — Personalized class recommendations
-- **Member Offers** — Targeted promotions & deals
-
-### 🔐 Privacy by Design
-
-- No external data transmission (runs locally)
-- Real deletion (not soft deletes)
-- Explicit user approval required
-- Automated verification after deletion
-
-## The Workflow
-
-```
-1. CONSENT
-   └─ Give consent in Club Portal
-   
-2. PERSONALIZATION
-   └─ Data shared to Class Booking & Member Offers
-   
-3. WITHDRAWAL REQUEST
-   └─ Request withdrawal in Recall Dashboard
-   
-4. INVESTIGATION
-   └─ LLM agents discover & trace data
-   
-5. REVIEW
-   └─ Multiple agents review the plan
-   
-6. APPROVAL
-   └─ User approves withdrawal
-   
-7. EXECUTION
-   └─ Delete records from all services
-   
-8. VERIFICATION
-   └─ Confirm deletion completed
-```
-
-## Getting Started
-
-Use the [Getting started guide](getting-started.md) for Python 3.10+, virtual-environment setup, provider configuration, and `make demo`. Node.js is required for the browser-engine tests.
-
-See [Deployment](deployment.md) for the connected local app, persistent data, optional MCP transport, and publishing the browser app's artifacts to GitHub Pages.
-
-## What Makes This Different?
-
-### Traditional Approach ❌
-- Manual data discovery
-- No verification of deletion
-- High privacy risk
-- Time-consuming
-
-### Recall Approach ✅
-- Automated investigation
-- Verified deletion
-- Privacy-first design
-- Minutes, not hours
-
-## Technology Stack
-
-- **Frontend**: Streamlit (reactive UI)
-- **LLM Backend**: OpenAI or OpenRouter (direct API)
-- **Models**: Configurable models for each role
-- **Services**: Flask (local APIs)
-- **Database**: SQLite (local storage)
-
-## Documentation
-
-- [Getting Started](getting-started.md) - Setup & first run
-- [Architecture](architecture.md) - System design
-- [Configuration](configuration.md) - .env settings
-- [API Reference](api.md) - Agent tools & workflows
-- [Troubleshooting](troubleshooting.md) - Common issues
-- [Contributing](contributing.md) - Development guide
-
-## Live Demo
-
-The project includes a fully functional demo with:
-
-- Synthetic fitness club data
-- Three independent service stores
-- Realistic data sharing patterns
-- End-to-end withdrawal workflows
-
-No external dependencies or API keys required!
-
-## Key Innovations
-
-### 🧠 Multi-Agent Reasoning
-Multiple LLM agents review proposals independently, catching errors before execution.
-
-### 🔍 Dependency Tracing
-Automated discovery of explicit data relationships across services.
-
-### ✅ Verified Deletion
-Post-deletion audits confirm data is actually gone, not just marked.
-
-### 🛡️ Re-ingestion Blocking
-Prevents data from being re-added after withdrawal.
-
-## Use Cases
-
-1. **GDPR Compliance** — Right to be forgotten
-2. **Privacy Audits** — Verify data removal capabilities
-3. **Privacy Engineering Research** — Study data workflows
-4. **Privacy Product Development** — Test withdrawal mechanisms
-5. **Privacy Education** — Teach consent & deletion concepts
-
-## Performance
-
-Typical workflow times (on modern laptop):
-
-- Investigation: 30-60 seconds
-- Review: 10-30 seconds
-- Deletion: 5-10 seconds
-- Verification: 10-20 seconds
-
-**Total: ~2-3 minutes** (vs manual investigation: hours)
-
-## Open Source & Local
-
-✅ No cloud dependencies
-✅ No API costs
-✅ Fully open source
-✅ Run everything locally
-✅ No data leaves your machine
-
-## Next Steps
-
-1. **[Get Started](getting-started.md)** — Install & run
-2. **[Learn the Architecture](architecture.md)** — Understand the design
-3. **[Explore the Demo](getting-started.md#running-the-demo)** — Try it out
-4. **[Contribute](contributing.md)** — Help improve it
-
----
-
-**Questions?** Check [Troubleshooting](troubleshooting.md) or [Contributing](contributing.md).
-
-**Ready to begin?** Start with [Getting Started](getting-started.md).
+Synthetic boundary fixtures are documented in [the dataset README](../data/golden/README.md). Dated evidence lives under `docs/audit/`; it is not a claim about the current running app or published site.

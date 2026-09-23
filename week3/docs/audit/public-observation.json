@@ -1,0 +1,45 @@
+{
+  "url": "https://dev-enthusiast-84.github.io/genai-academy-projects/recall/",
+  "observations": [
+    {
+      "page": "index.html",
+      "status": 200,
+      "title": "Recall \u00b7 Consent has an undo button",
+      "errors": [],
+      "providers": [
+        "OpenRouter",
+        "OpenAI"
+      ],
+      "embedded_customer_apps": 3,
+      "mobile_overflow": false
+    },
+    {
+      "page": "club-portal.html",
+      "status": 200,
+      "title": "Club Portal \u00b7 Recall connected demo",
+      "errors": [],
+      "mobile_overflow": false
+    },
+    {
+      "page": "class-booking.html",
+      "status": 200,
+      "title": "Class Booking \u00b7 Recall connected demo",
+      "errors": [],
+      "mobile_overflow": false
+    },
+    {
+      "page": "member-offers.html",
+      "status": 200,
+      "title": "Member Offers \u00b7 Recall connected demo",
+      "errors": [],
+      "mobile_overflow": false
+    },
+    {
+      "page": "scenario.html",
+      "status": 200,
+      "title": "The consent trail \u00b7 Recall scenario",
+      "errors": [],
+      "mobile_overflow": false
+    }
+  ]
+}

@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import os
 import time
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
 from .agent import investigate, ModelError, validate_role_models
 from .core import BoundaryError
 
@@ -79,6 +81,16 @@ Do not demand that protected records be added to the deletion list or mentioned 
 references must contain actual supplied IDs, never field names like records or edges.
 Always include all four fields: status, explanation, findings, preserved_ids, including empty lists.
 Do not reproduce the customer's request or sensitive content in your output.'''
+    if role == 'outcome_auditor':
+        system = system.replace(
+            'This is a pre-approval scope review, not permission to execute. A human will separately approve writes.\n'
+            'Do not reject a valid scope merely because that future execution approval has not happened yet.',
+            'This is a post-execution audit of an already approved scope. Do not authorize further writes.')
+        system += ('\nCatalog records are retained provenance metadata, not proof of stored data. '
+                   'proposal.targets identifies the approved removal scope; DELETE is the approved action, '
+                   'not proof it succeeded. Use states and checks for actual presence or absence. '
+                   'Never describe absent targets as preserved. preserved_ids must be actual record IDs '
+                   'outside the approved removal scope.')
     targets = set(evidence.get('proposal', {}).get('targets', []))
     membership = [{'id': record['id'], 'kind': record.get('kind'),
                    'action': 'DELETE' if record['id'] in targets else 'KEEP'}
@@ -95,7 +107,7 @@ Do not reproduce the customer's request or sensitive content in your output.'''
         if not isinstance(result.get('findings'), list) or not isinstance(result.get('preserved_ids'), list):
             raise ValueError()
         preserved = result['preserved_ids']
-        if not all(isinstance(r, str) and r in refs for r in preserved):
+        if not all(isinstance(r, str) and r in {record['id'] for record in evidence.get('records', [])} for r in preserved):
             raise ValueError()
         if set(preserved) & set(evidence.get('proposal', {}).get('targets', [])):
             raise ValueError()
@@ -122,74 +134,137 @@ class _Meter:
         return selected.complete(messages, tools)
 
 
+class ReviewState(TypedDict, total=False):
+    plan: dict | None
+    trace: list
+    reviews: list
+    history: list
+    round: int
+    findings: list
+    verdict: str
+    evidence: dict
+    clarify: bool
+    result: dict
+    nodes: list
+
+
 def review_plan(engine, client, user, request, on_event=None, use_judge=True):
-    """Up to two repair rounds. Requests remain unapprovable until all gates pass."""
+    """LangGraph review with bounded repairs; SQLite owns the approval boundary."""
     if use_judge and isinstance(client, dict):
         validate_role_models({role: getattr(model, 'model', '') for role, model in client.items()})
     elif use_judge and getattr(client, 'model', ''):
         raise ModelError('Provide separate investigator and judge model clients before investigating.')
+    previous = engine.latest(user)
+    if previous and previous['status'] == 'awaiting_approval':
+        engine.stale(previous)
     started, client = time.monotonic(), _Meter(client)
     engine.require_review = True
-    reviews, history, req, trace = [], [], None, []
+
     def emit(role, result, message):
         if on_event:
             on_event({'role': role, 'result': result, 'message': message})
-    for round_number in range(3):
-        try:
-            client.role = 'investigator'
-            result = investigate(engine, client, user, request, history=history, on_event=on_event)
-            trace.extend(result.get('trace', []))
-            if result['action'] == 'clarify':
-                if req:
-                    req['status'] = 'blocked'
-                    engine.save(req)
-                return {**result, 'trace': trace}
-            req = result['plan']
-            req.update(review_required=True, status='under_review')
-            engine.save(req)
-            emit('investigator', 'propose', 'Evidence-backed scope prepared for independent review.')
-            failures = hard_checks(engine, req)
-            emit('hard_checks', 'fail' if failures else 'pass', '; '.join(failures) or 'Scope, ownership, lineage and versions verified.')
-            if failures:
-                findings = [{'explanation': f, 'references': req['roots']} for f in failures]
-                verdict = 'blocked'
-                break
-            evidence = _evidence(engine, req)
-            findings, needs_clarification = [], False
-            for role in ['scope_reviewer'] + (['evaluation_judge'] if use_judge else []):
-                client.role = 'judge' if role == 'evaluation_judge' else role
-                review = _review(client, role, evidence, request)
-                reviews.append({'round': round_number + 1, **review})
-                emit(role, review['status'], review['explanation'])
-                findings.extend(review['findings'])
-                needs_clarification |= review['status'] == 'clarify'
-            if not findings:
-                verdict = 'pass'
-                break
-            req.update(status='blocked', reviews=list(reviews), evaluation={'verdict': 'blocked', 'findings': findings})
-            engine.save(req)
-            if needs_clarification or round_number == 2:
-                verdict = 'clarify' if needs_clarification else 'blocked'
-                break
-            history = [{'role': 'assistant', 'content': 'Independent evidence review requires revision.'},
-                       {'role': 'user', 'content': 'Reinvestigate these findings without expanding authority: ' + json.dumps(findings)}]
-            emit('repair', 'revise', 'Reinvestigating review findings; the previous proposal remains blocked.')
-        except ModelError as exc:
-            if req is None:
-                raise
-            verdict, findings = 'blocked', [{'explanation': str(exc), 'references': []}]
-            emit('evaluation_gate', 'blocked', str(exc))
-            break
-    req['reviews'] = reviews
-    req['evaluation'] = {'verdict': verdict, 'plan_hash': engine.plan_hash(req),
-                         'mode': 'llm_judge' if use_judge else 'scope_review_only',
-                         'rounds': round_number + 1, 'findings': findings}
-    req['telemetry'] = {'tool_transport': os.environ.get('RECALL_TOOL_TRANSPORT', 'http'), 'model_calls': client.calls, 'elapsed_seconds': round(time.monotonic() - started, 3)}
-    req['status'] = 'awaiting_approval' if verdict == 'pass' else 'blocked'
-    engine.save(req)
-    message = 'Reviewed scope is ready for human approval.' if verdict == 'pass' else 'Review blocked approval. Resolve the reported findings before continuing.'
-    emit('evaluation_gate', verdict, message)
-    return {'action': 'propose' if verdict == 'pass' else ('clarify' if verdict == 'clarify' else 'blocked'), 'plan': req, 'trace': trace, 'message': message}
+
+    def guarded(name, fn):
+        def node(state):
+            state = dict(state)
+            state['nodes'] = state['nodes'] + [name]
+            try:
+                return {**state, **fn(state)}
+            except ModelError as exc:
+                if state['plan'] is None:
+                    raise
+                emit('evaluation_gate', 'blocked', str(exc))
+                return {**state, 'verdict': 'blocked',
+                        'findings': [{'explanation': str(exc), 'references': []}]}
+        return node
+
+    def investigate_node(state):
+        client.role = 'investigator'
+        result = investigate(engine, client, user, request, history=state['history'], on_event=on_event)
+        trace = state['trace'] + result.get('trace', [])
+        if result['action'] == 'clarify':
+            if state['plan']:
+                state['plan']['status'] = 'blocked'
+                engine.save(state['plan'])
+            return {'result': {**result, 'trace': trace}, 'trace': trace, 'verdict': 'clarify'}
+        req = result['plan']
+        req.update(review_required=True, status='under_review')
+        engine.save(req)
+        emit('investigator', 'propose', 'Evidence-backed scope prepared for independent review.')
+        return {'plan': req, 'trace': trace, 'verdict': '', 'findings': [], 'clarify': False}
+
+    def checks_node(state):
+        req = state['plan']
+        failures = hard_checks(engine, req)
+        emit('hard_checks', 'fail' if failures else 'pass', '; '.join(failures) or 'Scope, ownership, lineage and versions verified.')
+        if failures:
+            return {'verdict': 'blocked', 'findings': [{'explanation': f, 'references': req['roots']} for f in failures]}
+        return {'evidence': _evidence(engine, req)}
+
+    def review_node(role):
+        def run(state):
+            client.role = 'judge' if role == 'evaluation_judge' else role
+            report = _review(client, role, state['evidence'], request)
+            emit(role, report['status'], report['explanation'])
+            return {'reviews': state['reviews'] + [{'round': state['round'], **report}],
+                    'findings': state['findings'] + report['findings'],
+                    'clarify': state['clarify'] or report['status'] == 'clarify'}
+        return run
+
+    def decide_node(state):
+        if not state['findings']:
+            return {'verdict': 'pass'}
+        req = state['plan']
+        req.update(status='blocked', reviews=state['reviews'],
+                   evaluation={'verdict': 'blocked', 'findings': state['findings']})
+        engine.save(req)
+        return {'verdict': 'clarify' if state['clarify'] else 'blocked' if state['round'] >= 3 else 'repair'}
+
+    def repair_node(state):
+        emit('repair', 'revise', 'Reinvestigating review findings; the previous proposal remains blocked.')
+        return {'round': state['round'] + 1, 'verdict': '',
+                'history': [{'role': 'assistant', 'content': 'Independent evidence review requires revision.'},
+                            {'role': 'user', 'content': 'Reinvestigate these findings without expanding authority: ' + json.dumps(state['findings'])}]}
+
+    def finish_node(state):
+        if state.get('result'):
+            return {}
+        req, verdict = state['plan'], state['verdict']
+        req['reviews'] = state['reviews']
+        req['evaluation'] = {'verdict': verdict, 'plan_hash': engine.plan_hash(req),
+                             'mode': 'llm_judge' if use_judge else 'scope_review_only',
+                             'rounds': state['round'], 'findings': state['findings']}
+        req['telemetry'] = {'framework': 'langgraph', 'graph_nodes': state['nodes'],
+                            'tool_transport': os.environ.get('RECALL_TOOL_TRANSPORT', 'http'),
+                            'model_calls': client.calls, 'elapsed_seconds': round(time.monotonic() - started, 3)}
+        req['status'] = 'awaiting_approval' if verdict == 'pass' else 'blocked'
+        engine.save(req)
+        message = 'Reviewed scope is ready for human approval.' if verdict == 'pass' else 'Review blocked approval. Resolve the reported findings before continuing.'
+        emit('evaluation_gate', verdict, message)
+        return {'result': {'action': 'propose' if verdict == 'pass' else 'clarify' if verdict == 'clarify' else 'blocked',
+                           'plan': req, 'trace': state['trace'], 'message': message}}
+
+    graph = StateGraph(ReviewState)
+    for name, fn in [('investigator', investigate_node), ('hard_checks', checks_node),
+                     ('scope_reviewer', review_node('scope_reviewer')),
+                     ('evaluation_judge', review_node('evaluation_judge')), ('decision', decide_node),
+                     ('repair', repair_node), ('finish', finish_node)]:
+        graph.add_node(name, guarded(name, fn))
+    graph.add_edge(START, 'investigator')
+    for source, destination in [('investigator', 'hard_checks'), ('hard_checks', 'scope_reviewer'),
+                                ('scope_reviewer', 'evaluation_judge' if use_judge else 'decision'),
+                                ('evaluation_judge', 'decision')]:
+        graph.add_conditional_edges(source, lambda state, dest=destination: 'finish' if state['verdict'] else dest,
+                                    ['finish', destination])
+    graph.add_conditional_edges('decision', lambda state: 'repair' if state['verdict'] == 'repair' else 'finish', ['repair', 'finish'])
+    graph.add_edge('repair', 'investigator')
+    graph.add_edge('finish', END)
+    # No parallel nodes or graph-level automatic retries around side effects.
+    # Persisted plans/approval and execution recovery remain owned by Engine.
+    result = graph.compile().invoke({'plan': None, 'trace': [], 'reviews': [], 'history': [],
+                                      'round': 1, 'findings': [], 'verdict': '', 'clarify': False, 'nodes': []},
+                                     {'recursion_limit': 32})
+    return result['result']
 
 
 def deterministic_rehearsal(engine, user):
@@ -213,7 +288,7 @@ def audit_outcome(engine, client, user, request_id, on_event=None):
     checks = req.get('behavior_checks', []) + [{'id': 'record:' + t['id'],
               'result': 'pass' if t['verification'] == 'absent' else t['verification'],
               'detail': 'Independent record presence read.'} for t in req['targets']]
-    evidence = {'records': engine.discover_records(user), 'edges': req['edges'], 'checks': checks}
+    evidence = {**_evidence(engine, req), 'checks': checks}
     try:
         selected = client['auditor'] if isinstance(client, dict) else client
         report = _review(selected, 'outcome_auditor', evidence, 'Assess withdrawal outcome from these actual checks.', [c['id'] for c in checks])

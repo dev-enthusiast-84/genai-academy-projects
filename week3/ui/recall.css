@@ -28,6 +28,23 @@ p,label{line-height:1.55}button{min-height:42px}button:focus-visible,a:focus-vis
 .footnote{font-size:11px;color:#6d6056;border-top:1px solid #deded4;padding-top:15px;margin-top:35px}
 [data-testid=stSidebar]{background:#eeeee6}.stButton button[kind=primary],.stFormSubmitButton button[kind=primary]{background:#85651f;border-color:#85651f}
 [data-testid=stHeader]{background:var(--paper);color:var(--ink)}
+/* Streamlit's nested sidebar icons retain dark-theme colors unless explicitly
+   overridden. Keep the reopen control visible on Recall's light header. */
+:is([data-testid=stExpandSidebarButton],[data-testid=stSidebarCollapseButton]){
+    background:#eeeee6!important;color:var(--ink)!important;
+    border:1px solid #b8a797!important;border-radius:6px!important;
+    min-height:42px;padding:6px 10px!important;
+}
+:is([data-testid=stExpandSidebarButton],[data-testid=stSidebarCollapseButton]) *{
+    color:var(--ink)!important;-webkit-text-fill-color:currentColor!important;
+}
+[data-testid=stExpandSidebarButton]::after{
+    content:"Settings & reset";font:600 14px 'Avenir Next',sans-serif;
+    color:var(--ink);white-space:nowrap;margin-left:6px;
+}
+:is([data-testid=stExpandSidebarButton],[data-testid=stSidebarCollapseButton]):hover{
+    background:#e9e4d6!important;border-color:var(--accent)!important;
+}
 [data-testid=stSidebar], [data-testid=stWidgetLabel], [data-testid=stCaptionContainer]{color:var(--ink)!important}
 [data-testid=stWidgetLabel] p, [data-testid=stCaptionContainer] p{color:var(--ink)!important}
 /* Option labels have their own Markdown theme color, separate from the
@@ -88,11 +105,15 @@ input::placeholder,textarea::placeholder{color:#62564b!important;-webkit-text-fi
 [data-testid=stLinkButton] a *{color:inherit!important;-webkit-text-fill-color:currentColor!important}
 [data-testid=stLinkButton] a:hover{background:#eeeee6!important;color:#292b27!important;border-color:#85651f!important}
 [data-testid=stLinkButton] a:focus-visible{outline:3px solid #85651f!important;outline-offset:3px}
-[data-testid=stButton] button[kind=primary], [data-testid=stFormSubmitButton] button[kind=primary]{background:#85651f!important;border-color:#85651f!important;color:#fff!important}
-:is([data-testid=stButton],[data-testid=stFormSubmitButton]) button[kind=primary]:not(:disabled):is(:hover,:focus-visible,:active){
+:is([data-testid=stButton],[data-testid=stFormSubmitButton]) button:is([kind=primary],[kind=primaryFormSubmit]){background:#85651f!important;border-color:#85651f!important;color:#fff!important}
+:is([data-testid=stButton],[data-testid=stFormSubmitButton]) button:is([kind=primary],[kind=primaryFormSubmit]):not(:disabled):is(:hover,:focus-visible,:active){
     background:#6b5018!important;border-color:#6b5018!important;color:#fff!important;
 }
-[data-testid=stButton] button[kind=primary] *, [data-testid=stFormSubmitButton] button[kind=primary] *{color:inherit!important;-webkit-text-fill-color:currentColor!important}
+:is([data-testid=stButton],[data-testid=stFormSubmitButton]) button:is([kind=primary],[kind=primaryFormSubmit]) *{color:inherit!important;-webkit-text-fill-color:currentColor!important}
+:is([data-testid=stButton],[data-testid=stFormSubmitButton]) button:is([kind=primary],[kind=primaryFormSubmit]):disabled{
+    background:#e4e1d8!important;border-color:#a69e8e!important;color:#595347!important;
+    opacity:1!important;cursor:not-allowed;
+}
 [data-testid=stExpander] details{background:var(--paper);border-color:var(--line);color:var(--ink)}
 [data-testid=stExpander] summary,
 [data-testid=stExpander] summary:hover,

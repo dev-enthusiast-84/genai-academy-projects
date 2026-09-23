@@ -11,6 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse
 
+from ui.identity import app_identity, persona, identity_css
 from .services import PORTS, configured_services
 from .core import Engine, BoundaryError
 
@@ -125,7 +126,10 @@ def page(store, query, csrf='', consent=None, notice=''):
     name, heading, description, accent = APPS[store.service]
     esc = html.escape
     records = store.visible(query)
-    refresh_url = '/?' + esc(urlencode({'q': query, 'refresh': '1'}), quote=True) + '#refresh-status'
+    # A repeated same-document anchor navigation does not fetch updated records.
+    # Give each rendered refresh link a new URL, preserving the search filter.
+    refresh_url = '/?' + esc(urlencode({'q': query, 'refresh': '1',
+                                      'refresh_id': secrets.token_urlsafe(12)}), quote=True) + '#refresh-status'
     dashboard = html.escape(os.environ.get('RECALL_DASHBOARD_URL', 'http://127.0.0.1:8501'), quote=True)
     app_urls = {key: f'http://127.0.0.1:{port}' for key, port in PORTS.items()}
     app_urls.update(json.loads(os.environ.get('RECALL_SERVICE_URLS', '{}')))
@@ -171,7 +175,7 @@ def page(store, query, csrf='', consent=None, notice=''):
         <div class="action-links"><a class="action-button" href="{refresh_url}">Refresh this app</a><a class="action-button secondary" href="{dashboard}" target="_blank" rel="noopener">Withdraw via Recall ↗</a></div>
         <p><a href="{club_url}" target="_blank" rel="noopener">Give consent in Club Portal ↗</a></p></article>''' + form
     app_links = '<div class="action-links">' + ''.join(
-        f'<a href="{esc(app_urls[key], quote=True)}" target="_blank" rel="noopener">{APPS[key][0]} ↗</a>'
+        f'<a href="{esc(app_urls[key], quote=True)}" target="_blank" rel="noopener">{app_identity(key)} ↗</a>'
         for key in PORTS if key != store.service) + '</div>'
     brand_panel = {
         'documents': '<section class=member-card><small>CLUB MEMBERSHIP / 2026</small><strong>Avery Example</strong><span>Member preferences &amp; privacy</span></section>',
@@ -181,8 +185,9 @@ def page(store, query, csrf='', consent=None, notice=''):
     return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>{name} · Recall demo</title><style>
     {(ROOT / 'ui/customer.css').read_text()}
-    </style><body class="{store.service}"><main><nav><strong>{name}</strong><a href="{dashboard}" target="_blank" rel="noopener">Open Recall ↗</a></nav>
-    <header><small>AVERY EXAMPLE · SYNTHETIC DEMO</small><h1>{heading}</h1><p>{description}</p></header>
+    {identity_css()}
+    </style><body class="{store.service}"><main><nav><strong>{app_identity(store.service)}</strong><a href="{dashboard}" target="_blank" rel="noopener">Open Recall ↗</a></nav>
+    {persona()}<header><small>AVERY EXAMPLE · SYNTHETIC DEMO</small><h1>{heading}</h1><p>{description}</p></header>
     {'<p id="refresh-status" role="status">' + esc(notice) + '</p>' if notice else ''}{form}{app_links}{brand_panel}<div class="count">{len(records)} visible items · <a href="{refresh_url}">Refresh</a></div>
     {cards or '<article><h2>Nothing to show yet</h2><p>Save your interests in Club Portal to see personalized suggestions here. After withdrawal, these suggestions disappear.</p></article>'}
     <footer>Local actions affect this app only. Recall investigates, requests your approval, and verifies withdrawal across all three apps.</footer></main></body></html>'''
@@ -205,7 +210,7 @@ def make_server(store, token, port):
             self.send_header('Content-Length', str(len(body)))
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
-            self.send_header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'")
+            self.send_header('Content-Security-Policy', "default-src 'none'; img-src data:; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'")
             self.end_headers()
             self.wfile.write(body)
 

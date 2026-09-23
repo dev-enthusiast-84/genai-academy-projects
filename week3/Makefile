@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 
-.PHONY: help install install-mcp demo start app restart stop kill logs clean reset test recall portal booking offers open-all showcase demo-models doctor
+.PHONY: help install install-mcp demo start app restart stop kill logs clean reset test test-browser pages-check pages-sync recall portal booking offers open-all showcase demo-models doctor
 
 help:
 	@echo "make demo        Start all four apps (no proxy)"
@@ -11,6 +11,9 @@ help:
 	@echo "make doctor      Check configured model connectivity and tool support"
 	@echo "make open-all    Open all four apps"
 	@echo "make test        Run Python and browser-engine tests"
+	@echo "make test-browser Run the hosted-style UI workflow in Chromium"
+	@echo "make pages-check Check staged public assets against site/"
+	@echo "make pages-sync  Stage public assets; does not publish"
 	@echo "make reset       Reset synthetic data and start a fresh demo"
 	@echo "make clean       Remove caches; preserve saved demo data"
 
@@ -49,6 +52,15 @@ clean:
 test:
 	$(PYTHON) -m pytest tests -q
 	node --test tests/pages.test.mjs
+
+test-browser:
+	$(PYTHON) tests/embedded_apps.py
+
+pages-check:
+	$(PYTHON) scripts/pages_artifacts.py --check
+
+pages-sync:
+	$(PYTHON) scripts/pages_artifacts.py --write
 
 recall:
 	@$(PYTHON) -m webbrowser http://127.0.0.1:8501

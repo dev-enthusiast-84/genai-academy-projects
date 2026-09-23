@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {Engine,investigate,providerRequest,STORAGE_KEY} from '../site/engine.mjs';
 const golden=JSON.parse(readFileSync(new URL('../data/golden/fixtures.json',import.meta.url)));
 const cases=JSON.parse(readFileSync(new URL('../data/golden/cases.json',import.meta.url))).cases;
-const fixture=JSON.parse(readFileSync(new URL('../site/demo.json',import.meta.url)));
+const fixture=JSON.parse(readFileSync(new URL('./fixtures/engine-demo.json',import.meta.url)));
 class Memory {constructor(){this.map=new Map();}getItem(k){return this.map.get(k)||null;}setItem(k,v){this.map.set(k,v);}}
 const present=e=>Object.values(e.state.stores).flatMap(s=>Object.keys(s)).sort();
 for(const c of cases)test(`Pages ${c.id}: ${c.title}`,async()=>{
@@ -98,4 +98,13 @@ test('Fitness withdrawal survives outage and removes behavior while protecting p
 });
 test('Fitness protected booking cannot become a withdrawal target',async()=>{
  const e=new Engine(fitness,new Memory());await e.grantConsent(true);assert.throws(()=>e.plan(['B1']),/source questionnaire/);assert.equal(e.inspect('B1').state,'present');
+});
+
+test('Failed replacement cannot revive an earlier approval preview after reload',async()=>{
+ const storage=new Memory();const e=new Engine(fixture,storage);e.plan(['D1']);
+ await assert.rejects(()=>investigate(e,{},'A different request',[],()=>{},async()=>{throw new Error('Unavailable');}),/Unavailable/);
+ const restored=new Engine(fixture,storage);
+ assert.equal(restored.state.request.status,'needs_new_plan');
+ await assert.rejects(()=>restored.approve(),/preview/);
+ assert.equal(restored.inspect('D1').state,'present');
 });

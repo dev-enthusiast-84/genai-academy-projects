@@ -36,12 +36,12 @@ def main():
             expect(offers.locator('.invitation')).to_contain_text('yoga invitation')
             expect(page.locator('#consent-summary')).to_contain_text('Sharing consent active')
             club.locator('#delete-source').click()
-            expect(club.locator('.card')).to_contain_text('Your questionnaire is deleted')
+            expect(club.get_by_role('heading', name='Your questionnaire is deleted.')).to_be_visible()
             expect(booking.locator('.recommendation')).to_be_visible()
             expect(offers.locator('.invitation')).to_be_visible()
             # The embedded link scrolls to Recall without navigating or reloading it.
             page.evaluate('window.navigationCheck = true')
-            club.locator('.recall-link').click()
+            club.locator('.recall-link').first.click()
             expect(page.locator('#request')).to_be_focused()
             assert page.evaluate('window.navigationCheck') is True
             page.locator('#rehearse').click()
@@ -51,7 +51,7 @@ def main():
             expect(booking.locator('.empty')).to_contain_text('Personalized recommendations removed')
             expect(offers.locator('.empty')).to_contain_text('removed')
             expect(booking.locator('.booking-ticket')).to_contain_text('PAID · CONFIRMED')
-            expect(club.locator('.card')).to_contain_text('Sharing consent withdrawn')
+            expect(club.get_by_role('heading', name='Sharing consent withdrawn.')).to_be_visible()
             page.locator('#reset').click()
             expect(club.locator('#agree')).to_be_visible()
             expect(booking.locator('.empty')).to_contain_text('No personalized suggestions yet')

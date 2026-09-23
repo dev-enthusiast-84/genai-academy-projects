@@ -10,13 +10,15 @@ from withdrawal.core import Engine, BoundaryError
 from withdrawal.agent import ModelClient, ModelError, settings, validate_role_models
 from withdrawal.services import configured_services
 from withdrawal.review import review_plan, deterministic_rehearsal, audit_outcome
+from ui.identity import app_identity, persona, identity_css
+from withdrawal.workflow import execute_with_audit
 from withdrawal.notifications import notification_settings, notify_withdrawal_status
 
 ROOT = Path(__file__).parent
 USER = 'U1'
 FIXTURE = json.loads((ROOT / 'site/fitness.json').read_text())
 st.set_page_config(page_title='Recall — consent has an undo button', page_icon='↩', layout='wide', initial_sidebar_state='collapsed')
-st.markdown('<style>' + (ROOT / 'ui/recall.css').read_text() + '</style>', unsafe_allow_html=True)
+st.markdown('<style>' + (ROOT / 'ui/recall.css').read_text() + identity_css() + '</style>', unsafe_allow_html=True)
 
 def esc(value):
     return html.escape(str(value))
@@ -90,9 +92,17 @@ with st.sidebar:
         except ConnectionError:
             st.error('Start all three applications before resetting the connected demo.')
             st.stop()
-        for key in ['conversation', 'agent_trace', 'agent_message', 'replay_result', 'needs_clarification']:
+        for key in ['agent_trace', 'agent_message', 'replay_result', 'needs_clarification']:
             st.session_state.pop(key, None)
+        st.session_state['reset_notice'] = True
         st.rerun()
+    if st.session_state.pop('reset_notice', False):
+        st.success('Demo reset complete. Previous requests, consent choices, and reuse blocks '
+                   'were cleared. Starting demo data has been restored.')
+        if services:
+            st.info('Refresh Club Portal, Class Booking, and Member Offers. '
+                    'Give consent in Club Portal to start the demo again. '
+                    'The sample paid booking and membership are available.')
     st.caption('Single-user local demo • Avery Example (U1). No production sign-in.')
     st.caption('Status notifications: ' + (notification_config['provider'] + ' enabled' if notification_config['enabled'] else 'disabled; configure in .env'))
     if notification_config['enabled']:
@@ -102,6 +112,8 @@ st.markdown('<div class="brand"><span class="brand-symbol">↩</span> Recall <sp
 st.markdown('<div class="kicker">Your information. Your decision.</div>', unsafe_allow_html=True)
 st.title('You deleted the form.\nWho still remembers?')
 st.markdown('<p class="lede">Your club questionnaire can live on as class preferences, an audience label, and a queued offer. Follow the evidence and take back your consent.</p>', unsafe_allow_html=True)
+
+st.markdown(persona(), unsafe_allow_html=True)
 
 st.markdown('<a href="#withdrawal-controls">Manage consent withdrawal ↓</a>', unsafe_allow_html=True)
 
@@ -171,6 +183,7 @@ for column, (service, label, actions) in zip(st.columns(3), [
     ('search', 'Open Class Booking ↗', 'Search saved information, inspect recommendations and your paid booking.'),
     ('personalization', 'Open Member Offers ↗', 'Inspect the personalized invitation retained by this app.')]):
     with column.container(key=f'app-{service}'):
+        st.markdown(app_identity(service), unsafe_allow_html=True)
         st.link_button(label, app_urls[service], width='stretch')
         st.caption(actions)
 st.caption('In Recall: investigate linked copies → review the plan → approve withdrawal → verify each app. Deleting the questionnaire alone does not do this.')
@@ -283,6 +296,9 @@ with st.container(key='withdrawal-request'):
     if submit:
         # An earlier preview cannot be approved while a replacement is prepared.
         st.session_state['needs_clarification'] = True
+    if not root_exists:
+        st.info('To enable plan preparation, give consent in Club Portal, then reload Recall. '
+                'You can delete the questionnaire in Club Portal before returning to investigate its copies.')
     if mode=='Live agent' and not ready:
         st.info('Open the sidebar to configure your selected provider and models. For OpenAI, add OPENAI_API_KEY to .env or enter it there.')
     investigation_progress = st.container()
@@ -311,7 +327,7 @@ with st.container():
             state = engine.inspect_service(USER, rec['id'])['state']
             label = {'present':'Present', 'absent':'Verified absent', 'unknown':'Unable to verify'}[state]
             cards.append(f'<div class="record"><div class="record-title">{esc(rec["title"])}</div><span class="badge {state}">{label}</span></div>')
-        parts.append(f'<div class="lane"><div class="lane-title">{labels[service]}</div>{"".join(cards)}</div>')
+        parts.append(f'<div class="lane"><div class="lane-title">{app_identity(service)}</div>{"".join(cards)}</div>')
     st.markdown('<div class="trail">'+''.join(parts)+'</div>', unsafe_allow_html=True)
     edges = req['edges'] if req else trail['edges']
     linked_records = {record['id']: record for record in trail['records']}
@@ -403,13 +419,27 @@ with withdrawal_review:
             st.write('**Review the exact change**')
             if st.session_state.get('needs_clarification'):
                 st.warning('This is an earlier preview. Resolve your latest clarification before approving a new plan.')
-            st.table([{'Information to remove': t['title'], 'App': labels.get(t['service'], t['service'])}
-                      for t in req['targets']])
+            scope_rows = []
+            for target in req['targets']:
+                state = engine.inspect_service(USER, target['id'])['state']
+                scope_rows.append({
+                    'Information in scope': target['title'],
+                    'App': labels.get(target['service'], target['service']),
+                    'Current state': {'present': 'Still stored', 'absent': 'Already absent',
+                                      'unknown': 'Unable to verify'}[state],
+                    'Action after approval': {
+                        'present': 'Delete, verify absence, and block re-import',
+                        'absent': 'Recheck absence and block re-import',
+                        'unknown': 'Check service, remove if present, and block re-import',
+                    }[state],
+                })
+            st.table(scope_rows)
+            st.caption('Already-absent records remain in scope to verify they stay absent and prevent re-import. They are not counted as newly deleted records.')
             st.caption('Your paid class booking, membership contact card, and public class listings will be kept.')
             with st.expander('Technical record references'):
                 st.table([{'Information': t['title'], 'Record ID': t['id'],
                            'Service': t['service'], 'Version': t['version']} for t in req['targets']])
-            st.caption('Approval withdraws the selected sharing consent, deletes the information listed above, and blocks these records from being imported again. Up to two retries per record; approval expires after 24 hours. Deletion cannot be undone.')
+            st.caption('Approval withdraws the selected sharing consent, removes any remaining information in scope, verifies absence, and blocks these records from being imported again. Up to two retries per record; approval expires after 24 hours. Deletion cannot be undone.')
             consent = st.checkbox('I approve these deletions and re-ingestion blocks', key=f'approve_{req["id"]}')
             if st.button('Approve & withdraw', type='primary', disabled=not consent or st.session_state.get('needs_clarification',False), width='stretch'):
                 try:
@@ -423,9 +453,8 @@ with withdrawal_review:
                         engine.set_fault('search','fail_before_commit',1)
                     elif fault=='Lost delete response':
                         engine.set_fault('search','commit_then_timeout',1)
-                    engine.delete_approved_records(req['id'],USER,stop_after=1 if fault=='Worker restart after one deletion' else None)
-                    if fault != 'Worker restart after one deletion':
-                        run_audit(req['id'])
+                    execute_with_audit(engine, USER, req['id'], run_audit,
+                                       stop_after=1 if fault=='Worker restart after one deletion' else None)
                     st.rerun()
                 except BoundaryError as exc:
                     st.error(str(exc))
@@ -437,8 +466,7 @@ with withdrawal_review:
             if st.button('Restore demo services & resume',type='primary',disabled=exhausted,width='stretch'):
                 try:
                     engine.clear_faults()
-                    engine.delete_approved_records(req['id'],USER)
-                    run_audit(req['id'])
+                    execute_with_audit(engine, USER, req['id'], run_audit)
                     st.rerun()
                 except BoundaryError as exc:
                     st.error(str(exc))
@@ -520,8 +548,6 @@ if submit:
                 st.session_state['needs_clarification'] = result['action'] != 'propose'
                 st.session_state['agent_message'] = result['message']
                 st.session_state['agent_trace'] = result['trace']
-                st.session_state.setdefault('conversation', []).extend([
-                    {'role':'user','content':request_text}, {'role':'assistant','content':result['message']}])
                 status.update(label='Plan ready for approval' if result['action']=='propose' else 'Preparation stopped · review the findings', state='complete' if result['action']=='propose' else 'error', expanded=result['action']!='propose')
     except (BoundaryError, ModelError) as exc:
         st.session_state['needs_clarification'] = True

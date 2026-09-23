@@ -1,18 +1,8 @@
-# Configuration Guide
+# Configuration
 
-Configure Recall for your needs.
+Use `.env.example` as the starting point for a new `.env`; preserve existing keys when updating an established setup. Environment variables override nonempty file settings. Never commit `.env`.
 
-## Environment Variables
-
-Configuration is managed through the `.env` file. Copy `.env.example` to `.env` and customize:
-
-```bash
-test -f .env || cp .env.example .env
-```
-
-## Model providers
-
-OpenAI is the default. Set credentials locally:
+## Providers
 
 ```env
 LLM_PROVIDER=openai
@@ -23,7 +13,7 @@ OPENAI_JUDGE_MODEL=gpt-4.1
 OPENAI_AUDITOR_MODEL=gpt-4.1-mini
 ```
 
-For OpenRouter:
+OpenAI uses its direct endpoint. For OpenRouter:
 
 ```env
 LLM_PROVIDER=openrouter
@@ -35,98 +25,58 @@ LLM_JUDGE_MODEL=anthropic/claude-sonnet-4.6
 LLM_AUDITOR_MODEL=anthropic/claude-sonnet-4.6
 ```
 
-Use the sidebar to load available models. The judge must differ from the investigator. OpenAI settings use the `OPENAI_` prefix; OpenRouter role settings use `LLM_`. Run `make doctor` to check connectivity and model selections. Live requests send authorized synthetic evidence to your provider and may incur charges. Guided rehearsal requires no API key.
+Model IDs are configurable examples, not availability or quality guarantees. Use **Load available models** or `make doctor` to check your account. The judge must have a different model ID from the investigator. Optional `LLM_MODEL` supplies legacy OpenRouter role defaults and `LLM_API_KEY` overrides its key; prefer the explicit settings above. Neither unsupported local providers nor a model proxy are started by the project.
 
-## Service Configuration
+## Runtime
 
-### Local Service Ports
+`make demo` uses `.runtime/fitness/recall` for workflow state and `.runtime/fitness/applications` for three independent service stores. `run_demo.py --directory PATH` chooses another root; `--dashboard-port PORT` changes the dashboard port. Customer service ports 8101–8103 are defined in `withdrawal/services.py`.
 
-```env
-# Defined in withdrawal/services.py
-# Club Portal: 8101
-# Class Booking: 8102
-# Member Offers: 8103
-# Recall Dashboard: 8501
-```
+The launcher generates `RECALL_SERVICE_TOKEN` and passes `RECALL_SERVICE_URLS`, `RECALL_DATA_DIR`, and `RECALL_DASHBOARD_URL` to its children. Do not manually expose these local services to the public internet.
 
-Set the dashboard port with `python run_demo.py --dashboard-port 8502` after activating `.venv`. Customer ports are defined in `withdrawal/services.py` (`PORTS`) and have no launcher override.
-
-### Service URLs
-
-The launcher generates `RECALL_SERVICE_URLS` for all three services and a fresh `RECALL_SERVICE_TOKEN`, shared by its child processes. It also sets `RECALL_DASHBOARD_URL`. Do not hardcode a token in `.env` for the standard launcher.
-
-## Database Configuration
-
-`make demo` stores Recall state in `.runtime/fitness/recall/` and service databases in `.runtime/fitness/applications/`. To change the parent directory, use:
+## Optional MCP
 
 ```bash
-python run_demo.py --directory /path/to/demo-data
+make install-mcp
 ```
 
-The launcher sets `RECALL_DATA_DIR` to that directory's `recall/` subfolder, overriding any `.env` value. Standalone `app.py` defaults to `.runtime/fitness-local`, but does not start the connected services.
+Set `RECALL_TOOL_TRANSPORT=mcp` in `.env` before `make demo`, or run `run_demo.py --mcp`. Default port 8104 can be changed with `RECALL_MCP_PORT`; `RECALL_MCP_URL` selects the loopback streamable HTTP URL. Default transport `http` requires no MCP dependency.
 
-Use `make reset` to reset the managed demo's synthetic data and request history. For a custom directory, stop its launcher and run `python run_demo.py --directory /path/to/demo-data --reset`. Restarting without `--reset` preserves state.
-
-## Notification Configuration
-
-### Email Notifications
-
-```env
-NOTIFICATION_ENABLED=true
-NOTIFICATION_PROVIDER=email
-NOTIFICATION_SMTP_HOST=smtp.gmail.com
-NOTIFICATION_SMTP_PORT=587
-NOTIFICATION_SMTP_USERNAME=your-email@gmail.com
-NOTIFICATION_SMTP_PASSWORD=app-password-here
-NOTIFICATION_FROM_EMAIL=your-email@gmail.com
-NOTIFICATION_TO_EMAIL=recipient@example.com
-NOTIFICATION_EVENTS=awaiting_approval,review_blocked,partial,complete
-NOTIFICATION_TIMEOUT_SECONDS=5
-```
-
-**For Gmail with 2FA:**
-
-1. Enable 2-Step Verification
-2. Generate App Password: https://myaccount.google.com/apppasswords
-3. Use the generated password (not your account password)
-
-### Slack Notifications
+## Optional Slack status notifications
 
 ```env
 NOTIFICATION_ENABLED=true
 NOTIFICATION_PROVIDER=slack
-NOTIFICATION_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+NOTIFICATION_WEBHOOK_URL=https://hooks.slack.com/services/your/configured/destination
 NOTIFICATION_EVENTS=awaiting_approval,review_blocked,partial,complete
+NOTIFICATION_TIMEOUT_SECONDS=5
 ```
 
-## Tool Transport Configuration
+Also tick **Send status notifications to the configured Slack destination** in the dashboard sidebar. This explicitly enables external sends for the session; default configuration disables them. Only fixed status text and the request ID are sent, once per request/status; uncertain delivery is not automatically retried. No SMTP/email integration exists.
 
-### HTTP Transport (Default)
+## Reset and re-consent
 
-```env
-RECALL_TOOL_TRANSPORT=http
-```
+`make restart` preserves data. **Reset demo** or `make reset` clears synthetic history, consent and suppression for a fresh journey; then give consent in Club Portal again. Production re-consent with new identities/versions is outside this prototype.
 
-Agents communicate with services via HTTP API.
 
-### MCP Transport (Advanced)
+## Troubleshooting and recovery
 
-```env
-RECALL_TOOL_TRANSPORT=mcp
-RECALL_MCP_PORT=8104
-RECALL_MCP_URL=http://127.0.0.1:8104/mcp
-```
+Open **Settings & reset** at the upper left of Recall for model settings and demo controls. A disabled plan button requires consent in Club Portal and a reload of Recall; live mode also requires configured models. Refresh the customer apps explicitly after consent or withdrawal.
 
-Install the optional SDK with `make install-mcp`, then restart using `make restart`. Alternatively, activate `.venv` and run `python run_demo.py --mcp`. HTTP transport does not require this SDK.
+- **Provider unavailable:** run `make doctor`, verify account access/quota, and use **Load available models** to check role selections. The judge must differ from the investigator. Guided rehearsal works without model calls.
+- **Ports already occupied:** check the four app addresses before starting another instance. `make logs` reports only tracked processes. Stop a manually launched instance in its own terminal; `make stop` does not own it.
+- **Approval unavailable:** resolve clarification/review findings, prepare a new plan when requested, and tick the exact deletion approval checkbox.
+- **Reset:** tick **Reset all local synthetic data and request history**, then click **Reset demo**. A confirmation explains the cleared history/consent/blocks and restored starting data. Refresh all customer apps and give consent again. Download a receipt first if you need the previous run's evidence.
 
-## Advanced Configuration
+| Situation | Behavior and next step |
+| --- | --- |
+| Clarification or blocked review | No valid approval yet. Revise the request and prepare a new plan. |
+| One temporary failure | At most two retries after the first delete attempt; inspect uncertain writes first. |
+| App offline | Consent/suppression may already be recorded locally, but that app's deletion and blocks remain unverified. Show partial/unknown; restore the app and resume. |
+| Worker interruption | Use the saved exact approval to resume remaining targets; do not repeat verified deletions. |
+| Changed lineage or version | Existing approval cannot authorize the change; investigate and approve a new plan. |
+| Expired approval or exhausted retries | Prepare a new plan and obtain fresh human approval. |
+| Revoked further attempts | Stop future writes; already completed deletions remain irreversible. |
+| Model auditor unavailable or unresolved | Keep the deterministic results visible without claiming a successful combined audit. |
+| Completed withdrawal, want to test again | Reset the demo, then give consent again in Club Portal. |
 
-Model request parameters are implemented in `withdrawal/agent.py`; workflow review and retry limits are implemented in `withdrawal/review.py` and `withdrawal/core.py`. They are code settings, not supported `.env` options. There is no `DEBUG` environment switch in the launcher.
-
-`make logs` reports managed process status. Streamlit and launcher output appear in the launch terminal; customer-service subprocess output is suppressed by `run_demo.py`.
-
-## Troubleshooting configuration
-
-Check your provider key locally without sharing it. Use **Load available models** to confirm access and select available models for each role. If a request fails, check the endpoint, account quota, and network connection.
-
-See [Getting Started](getting-started.md) and [Troubleshooting](troubleshooting.md).
+The **Restore demo services & resume** button clears injected faults. A genuinely stopped service must be restarted (for example with `make restart`) before retrying. Reset is not needed to recover an unfinished approved withdrawal.

@@ -142,3 +142,99 @@ def test_genuine_clarification_stays_blocked_after_single_recheck(engine):
     assert result['action'] == 'clarify'
     assert engine.latest('U1') is None
     assert engine.inspect_service('U1', 'Q1')['state'] == 'present'
+
+
+def test_failed_replacement_durably_invalidates_old_preview(engine):
+    previous = deterministic_rehearsal(engine, 'U1')['plan']
+    from withdrawal.agent import ModelError
+    class Unavailable:
+        def complete(self, *_args):
+            raise ModelError('Provider unavailable')
+    with pytest.raises(ModelError):
+        review_plan(engine, Unavailable(), 'U1', 'A different request')
+    fresh = Engine(engine.directory, require_review=True)
+    try:
+        assert fresh.get_request(previous['id'], 'U1')['status'] == 'needs_new_plan'
+        with pytest.raises(BoundaryError):
+            fresh.approve(previous['id'], 'U1')
+        assert fresh.inspect_service('U1', 'D1')['state'] == 'present'
+    finally:
+        fresh.close()
+
+
+def test_auditor_unresolved_clears_full_completion_flag(engine):
+    req = deterministic_rehearsal(engine, 'U1')['plan']
+    engine.approve(req['id'], 'U1')
+    engine.delete_approved_records(req['id'], 'U1')
+    result = audit_outcome(engine, Script([review('clarify')]), 'U1', req['id'])
+    assert result['status'] == 'partial'
+    assert result['full_withdrawal_complete'] is False
+
+
+def test_langgraph_stages_and_repair_are_recorded(engine):
+    req = review_plan(engine, Script(investigation() + [review(), review('revise')] +
+                                    investigation() + [review(), review()]), 'U1', 'Withdraw D1.')['plan']
+    assert req['telemetry']['framework'] == 'langgraph'
+    nodes = req['telemetry']['graph_nodes']
+    assert nodes == ['investigator', 'hard_checks', 'scope_reviewer', 'evaluation_judge',
+                     'decision', 'repair', 'investigator', 'hard_checks', 'scope_reviewer',
+                     'evaluation_judge', 'decision', 'finish']
+    assert req['approval'] is None
+
+
+def test_outcome_evidence_distinguishes_removed_targets_from_catalog(engine):
+    req = deterministic_rehearsal(engine, 'U1')['plan']
+    engine.approve(req['id'], 'U1')
+    engine.delete_approved_records(req['id'], 'U1')
+
+    class Auditor:
+        def complete(self, messages, tools):
+            assert 'This is a post-execution audit' in messages[0]['content']
+            assert 'This is a pre-approval scope review' not in messages[0]['content']
+            payload = json.loads(messages[-1]['content'])
+            evidence = payload['evidence']
+            assert set(evidence['proposal']['targets']) == {t['id'] for t in req['targets']}
+            assert all(record['state'] == 'absent' for record in evidence['states'])
+            actions = {r['id']: r['action'] for r in payload['exact_record_actions']}
+            assert actions['Q1'] == 'DELETE' and actions['B1'] == 'KEEP'
+            return review()
+
+    result = audit_outcome(engine, Auditor(), 'U1', req['id'])
+    assert result['outcome_audit']['verdict'] == 'pass'
+
+
+def test_auditor_cannot_claim_removed_target_is_preserved(engine):
+    req = deterministic_rehearsal(engine, 'U1')['plan']
+    engine.approve(req['id'], 'U1')
+    engine.delete_approved_records(req['id'], 'U1')
+    bad = json.loads(review()['content'])
+    bad['preserved_ids'] = ['D1', 'B1']
+    result = audit_outcome(engine, Script([{'content': json.dumps(bad)}]), 'U1', req['id'])
+    assert result['status'] == 'partial'
+    assert result['outcome_audit']['verdict'] == 'unresolved'
+
+
+def test_execution_graph_requires_approval_and_resumes_after_restart(engine):
+    from withdrawal.workflow import execute_with_audit
+    req = deterministic_rehearsal(engine, 'U1')['plan']
+    audits = []
+
+    def audit(request_id):
+        audits.append(request_id)
+        engine.verify_withdrawal(request_id, 'U1')
+
+    with pytest.raises(BoundaryError):
+        execute_with_audit(engine, 'U1', req['id'], audit)
+    assert audits == []
+    engine.approve(req['id'], 'U1')
+    stopped = execute_with_audit(engine, 'U1', req['id'], audit, stop_after=1)
+    assert stopped['status'] == 'interrupted' and audits == []
+    fresh = Engine(engine.directory, require_review=True)
+    try:
+        completed = execute_with_audit(fresh, 'U1', req['id'],
+                                       lambda rid: fresh.verify_withdrawal(rid, 'U1'))
+        assert completed['status'] == 'complete'
+        assert fresh.inspect_service('U1', 'B1')['state'] == 'present'
+        assert all(t['attempts'] == 1 for t in completed['targets'])
+    finally:
+        fresh.close()

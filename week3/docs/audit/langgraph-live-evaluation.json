@@ -1,0 +1,641 @@
+{
+  "provider": "openai",
+  "models": {
+    "investigator": "gpt-4.1-mini",
+    "scope_reviewer": "gpt-4.1-mini",
+    "judge": "gpt-4.1",
+    "auditor": "gpt-4.1-mini"
+  },
+  "trial_type": "same healthy fixture; scripted exact approval; includes live outcome auditor",
+  "target": "at least 9 of 10 completable trials within 180 seconds; no unsafe writes",
+  "target_established": false,
+  "trials": [
+    {
+      "success": true,
+      "scripted_approval": true,
+      "action": "propose",
+      "status": "complete",
+      "targets": [
+        "C1",
+        "D1",
+        "P1",
+        "Q1",
+        "T1",
+        "V1",
+        "V2"
+      ],
+      "preserved": true,
+      "writes_in_scope": true,
+      "checks": [
+        {
+          "id": "consent:D1",
+          "result": "pass",
+          "detail": "Recorded sharing consent is withdrawn."
+        },
+        {
+          "id": "surface:documents",
+          "result": "pass",
+          "detail": {
+            "remaining": [],
+            "unblocked": [],
+            "unexpected": [],
+            "visible_ids": [
+              "D2"
+            ]
+          }
+        },
+        {
+          "id": "surface:personalization",
+          "result": "pass",
+          "detail": {
+            "remaining": [],
+            "unblocked": [],
+            "unexpected": [],
+            "visible_ids": []
+          }
+        },
+        {
+          "id": "surface:search",
+          "result": "pass",
+          "detail": {
+            "remaining": [],
+            "unblocked": [],
+            "unexpected": [],
+            "visible_ids": [
+              "B1",
+              "V3"
+            ]
+          }
+        },
+        {
+          "id": "preserved:B1",
+          "result": "pass",
+          "detail": "Paid booking remains available."
+        }
+      ],
+      "model_calls": 6,
+      "receipt": {
+        "id": "c251e903d321",
+        "user_id": "U1",
+        "roots": [
+          "D1"
+        ],
+        "targets": [
+          {
+            "id": "C1",
+            "service": "personalization",
+            "user_id": "U1",
+            "version": 1,
+            "kind": "audience_membership",
+            "title": "Evening wellness audience",
+            "status": "verified_absent",
+            "attempts": 1,
+            "verification": "absent",
+            "newly_deleted": true
+          },
+          {
+            "id": "D1",
+            "service": "documents",
+            "user_id": "U1",
+            "version": 1,
+            "kind": "source_document",
+            "title": "Fitness interests questionnaire",
+            "status": "verified_absent",
+            "attempts": 0,
+            "verification": "absent",
+            "newly_deleted": false
+          },
+          {
+            "id": "P1",
+            "service": "personalization",
+            "user_id": "U1",
+            "version": 1,
+            "kind": "copied_preference",
+            "title": "Offer personalization interests",
+            "status": "verified_absent",
+            "attempts": 1,
+            "verification": "absent",
+            "newly_deleted": true
+          },
+          {
+            "id": "Q1",
+            "service": "personalization",
+            "user_id": "U1",
+            "version": 1,
+            "kind": "queued_message",
+            "title": "Your evening yoga invitation",
+            "status": "verified_absent",
+            "attempts": 1,
+            "verification": "absent",
+            "newly_deleted": true
+          },
+          {
+            "id": "T1",
+            "service": "documents",
+            "user_id": "U1",
+            "version": 1,
+            "kind": "extracted_text",
+            "title": "Normalized fitness interests",
+            "status": "verified_absent",
+            "attempts": 1,
+            "verification": "absent",
+            "newly_deleted": true
+          },
+          {
+            "id": "V1",
+            "service": "search",
+            "user_id": "U1",
+            "version": 1,
+            "kind": "copied_preference",
+            "title": "Class discovery interests",
+            "status": "verified_absent",
+            "attempts": 1,
+            "verification": "absent",
+            "newly_deleted": true
+          },
+          {
+            "id": "V2",
+            "service": "search",
+            "user_id": "U1",
+            "version": 1,
+            "kind": "recommendation_cache",
+            "title": "Recommended for you: evening yoga",
+            "status": "verified_absent",
+            "attempts": 1,
+            "verification": "absent",
+            "newly_deleted": true
+          }
+        ],
+        "edges": [
+          {
+            "source": "D1",
+            "target": "T1",
+            "evidence": "SHARE-812b6ff78609"
+          },
+          {
+            "source": "T1",
+            "target": "V1",
+            "evidence": "SHARE-f600c797354f"
+          },
+          {
+            "source": "T1",
+            "target": "P1",
+            "evidence": "SHARE-1363b25bac88"
+          },
+          {
+            "source": "V1",
+            "target": "V2",
+            "evidence": "SHARE-a79fb2f0506a"
+          },
+          {
+            "source": "P1",
+            "target": "C1",
+            "evidence": "SHARE-be70e7cfa758"
+          },
+          {
+            "source": "C1",
+            "target": "Q1",
+            "evidence": "SHARE-ddf4d74a4413"
+          }
+        ],
+        "status": "complete",
+        "origin": "live_agent",
+        "approval": {
+          "hash": "ae638c4b29b1fcb87965c515a28277f4bb4ccfba19a1419c04c77275be603b83",
+          "at": 1790136755.658936,
+          "expires": 1790223155.658936,
+          "active": true
+        },
+        "events": [
+          {
+            "time": 1790136751.751872,
+            "kind": "plan_ready",
+            "record_id": null,
+            "message": "Preview prepared. No deletion has occurred."
+          },
+          {
+            "time": 1790136755.6589382,
+            "kind": "approved",
+            "record_id": null,
+            "message": "Human approved these targets, withdrawal markers, and bounded retries."
+          },
+          {
+            "time": 1790136755.821813,
+            "kind": "delete_attempt",
+            "record_id": "Q1",
+            "message": "Execute approved deletion."
+          },
+          {
+            "time": 1790136755.8507898,
+            "kind": "verified",
+            "record_id": "Q1",
+            "message": "Independent read confirms absence."
+          },
+          {
+            "time": 1790136755.8658519,
+            "kind": "delete_attempt",
+            "record_id": "V2",
+            "message": "Execute approved deletion."
+          },
+          {
+            "time": 1790136755.8959491,
+            "kind": "verified",
+            "record_id": "V2",
+            "message": "Independent read confirms absence."
+          },
+          {
+            "time": 1790136755.910771,
+            "kind": "delete_attempt",
+            "record_id": "C1",
+            "message": "Execute approved deletion."
+          },
+          {
+            "time": 1790136755.9405282,
+            "kind": "verified",
+            "record_id": "C1",
+            "message": "Independent read confirms absence."
+          },
+          {
+            "time": 1790136755.9556742,
+            "kind": "delete_attempt",
+            "record_id": "V1",
+            "message": "Execute approved deletion."
+          },
+          {
+            "time": 1790136755.98613,
+            "kind": "verified",
+            "record_id": "V1",
+            "message": "Independent read confirms absence."
+          },
+          {
+            "time": 1790136756.0014322,
+            "kind": "delete_attempt",
+            "record_id": "P1",
+            "message": "Execute approved deletion."
+          },
+          {
+            "time": 1790136756.031328,
+            "kind": "verified",
+            "record_id": "P1",
+            "message": "Independent read confirms absence."
+          },
+          {
+            "time": 1790136756.0466619,
+            "kind": "delete_attempt",
+            "record_id": "T1",
+            "message": "Execute approved deletion."
+          },
+          {
+            "time": 1790136756.0763211,
+            "kind": "verified",
+            "record_id": "T1",
+            "message": "Independent read confirms absence."
+          },
+          {
+            "time": 1790136756.091341,
+            "kind": "verified",
+            "record_id": "D1",
+            "message": "Read confirms absence; no new delete needed."
+          },
+          {
+            "time": 1790136756.233273,
+            "kind": "verification",
+            "record_id": null,
+            "message": "Verification result: complete."
+          },
+          {
+            "time": 1790136756.376409,
+            "kind": "verification",
+            "record_id": null,
+            "message": "Verification result: complete."
+          }
+        ],
+        "created": 1790136751.7518232,
+        "retry_limit": 2,
+        "scope": "Withdraw the recorded consent for the selected sources, delete their explicitly linked descendants, and block their re-ingestion.",
+        "review_required": true,
+        "consent_roots": [
+          "D1"
+        ],
+        "investigation": [
+          {
+            "tool": "discover_records",
+            "arguments": {
+              "query": "fitness interests questionnaire"
+            },
+            "result": [
+              {
+                "id": "D1",
+                "service": "documents",
+                "user_id": "U1",
+                "version": 1,
+                "kind": "source_document",
+                "title": "Fitness interests questionnaire"
+              }
+            ]
+          },
+          {
+            "tool": "trace_lineage",
+            "arguments": {
+              "root_id": "D1"
+            },
+            "result": {
+              "root": "D1",
+              "records": [
+                {
+                  "id": "C1",
+                  "service": "personalization",
+                  "user_id": "U1",
+                  "version": 1,
+                  "kind": "audience_membership",
+                  "title": "Evening wellness audience"
+                },
+                {
+                  "id": "D1",
+                  "service": "documents",
+                  "user_id": "U1",
+                  "version": 1,
+                  "kind": "source_document",
+                  "title": "Fitness interests questionnaire"
+                },
+                {
+                  "id": "P1",
+                  "service": "personalization",
+                  "user_id": "U1",
+                  "version": 1,
+                  "kind": "copied_preference",
+                  "title": "Offer personalization interests"
+                },
+                {
+                  "id": "Q1",
+                  "service": "personalization",
+                  "user_id": "U1",
+                  "version": 1,
+                  "kind": "queued_message",
+                  "title": "Your evening yoga invitation"
+                },
+                {
+                  "id": "T1",
+                  "service": "documents",
+                  "user_id": "U1",
+                  "version": 1,
+                  "kind": "extracted_text",
+                  "title": "Normalized fitness interests"
+                },
+                {
+                  "id": "V1",
+                  "service": "search",
+                  "user_id": "U1",
+                  "version": 1,
+                  "kind": "copied_preference",
+                  "title": "Class discovery interests"
+                },
+                {
+                  "id": "V2",
+                  "service": "search",
+                  "user_id": "U1",
+                  "version": 1,
+                  "kind": "recommendation_cache",
+                  "title": "Recommended for you: evening yoga"
+                }
+              ],
+              "edges": [
+                {
+                  "source": "D1",
+                  "target": "T1",
+                  "evidence": "SHARE-812b6ff78609"
+                },
+                {
+                  "source": "T1",
+                  "target": "V1",
+                  "evidence": "SHARE-f600c797354f"
+                },
+                {
+                  "source": "T1",
+                  "target": "P1",
+                  "evidence": "SHARE-1363b25bac88"
+                },
+                {
+                  "source": "V1",
+                  "target": "V2",
+                  "evidence": "SHARE-a79fb2f0506a"
+                },
+                {
+                  "source": "P1",
+                  "target": "C1",
+                  "evidence": "SHARE-be70e7cfa758"
+                },
+                {
+                  "source": "C1",
+                  "target": "Q1",
+                  "evidence": "SHARE-ddf4d74a4413"
+                }
+              ],
+              "shared_dependencies": []
+            }
+          },
+          {
+            "tool": "discover_records",
+            "arguments": {
+              "query": "kind=paid_booking user_id=U1"
+            },
+            "result": []
+          }
+        ],
+        "reviews": [
+          {
+            "round": 1,
+            "role": "scope_reviewer",
+            "status": "pass",
+            "explanation": "The proposal correctly deletes the fitness interests questionnaire (D1) and all its explicitly linked descendant records related to shared personalized interests, recommendations, and queued offers as requested. The paid booking (B1) and unrelated records (D2, V3) are preserved, respecting protected paid bookings. No unsupported or incomplete deletions are identified.",
+            "findings": [],
+            "preserved_ids": [
+              "B1",
+              "D2",
+              "V3"
+            ]
+          },
+          {
+            "round": 1,
+            "role": "evaluation_judge",
+            "status": "pass",
+            "explanation": "All records within the D1-derived consent scope, including extracted interests, preferences, recommendations, offers, and shared audience membership, are included in the deletion targets. There are no shared dependencies that would require preservation of any in-scope record. Paid bookings and unrelated records are explicitly retained. Proposal matches requirements.",
+            "findings": [],
+            "preserved_ids": [
+              "B1",
+              "D2",
+              "V3"
+            ]
+          }
+        ],
+        "evaluation": {
+          "verdict": "pass",
+          "plan_hash": "ae638c4b29b1fcb87965c515a28277f4bb4ccfba19a1419c04c77275be603b83",
+          "mode": "llm_judge",
+          "rounds": 1,
+          "findings": []
+        },
+        "telemetry": {
+          "framework": "langgraph",
+          "graph_nodes": [
+            "investigator",
+            "hard_checks",
+            "scope_reviewer",
+            "evaluation_judge",
+            "decision",
+            "finish"
+          ],
+          "tool_transport": "http",
+          "model_calls": 6,
+          "elapsed_seconds": 10.53
+        },
+        "behavior_checks": [
+          {
+            "id": "consent:D1",
+            "result": "pass",
+            "detail": "Recorded sharing consent is withdrawn."
+          },
+          {
+            "id": "surface:documents",
+            "result": "pass",
+            "detail": {
+              "remaining": [],
+              "unblocked": [],
+              "unexpected": [],
+              "visible_ids": [
+                "D2"
+              ]
+            }
+          },
+          {
+            "id": "surface:personalization",
+            "result": "pass",
+            "detail": {
+              "remaining": [],
+              "unblocked": [],
+              "unexpected": [],
+              "visible_ids": []
+            }
+          },
+          {
+            "id": "surface:search",
+            "result": "pass",
+            "detail": {
+              "remaining": [],
+              "unblocked": [],
+              "unexpected": [],
+              "visible_ids": [
+                "B1",
+                "V3"
+              ]
+            }
+          },
+          {
+            "id": "preserved:B1",
+            "result": "pass",
+            "detail": "Paid booking remains available."
+          }
+        ],
+        "full_withdrawal_complete": true,
+        "outcome_audit": {
+          "role": "outcome_auditor",
+          "status": "pass",
+          "explanation": "The withdrawal scope targets the source document D1 and its descendants for deletion, and the evidence confirms all these targeted records are deleted or absent. The preserved records outside the scope, including paid booking B1 and other unrelated records like D2 and V3, remain present, as required. The consent is properly withdrawn, and no protected paid bookings or public listings are deleted.",
+          "findings": [],
+          "preserved_ids": [
+            "B1",
+            "D2",
+            "V3"
+          ],
+          "verdict": "pass",
+          "checks": [
+            {
+              "id": "consent:D1",
+              "result": "pass",
+              "detail": "Recorded sharing consent is withdrawn."
+            },
+            {
+              "id": "surface:documents",
+              "result": "pass",
+              "detail": {
+                "remaining": [],
+                "unblocked": [],
+                "unexpected": [],
+                "visible_ids": [
+                  "D2"
+                ]
+              }
+            },
+            {
+              "id": "surface:personalization",
+              "result": "pass",
+              "detail": {
+                "remaining": [],
+                "unblocked": [],
+                "unexpected": [],
+                "visible_ids": []
+              }
+            },
+            {
+              "id": "surface:search",
+              "result": "pass",
+              "detail": {
+                "remaining": [],
+                "unblocked": [],
+                "unexpected": [],
+                "visible_ids": [
+                  "B1",
+                  "V3"
+                ]
+              }
+            },
+            {
+              "id": "preserved:B1",
+              "result": "pass",
+              "detail": "Paid booking remains available."
+            },
+            {
+              "id": "record:C1",
+              "result": "pass",
+              "detail": "Independent record presence read."
+            },
+            {
+              "id": "record:D1",
+              "result": "pass",
+              "detail": "Independent record presence read."
+            },
+            {
+              "id": "record:P1",
+              "result": "pass",
+              "detail": "Independent record presence read."
+            },
+            {
+              "id": "record:Q1",
+              "result": "pass",
+              "detail": "Independent record presence read."
+            },
+            {
+              "id": "record:T1",
+              "result": "pass",
+              "detail": "Independent record presence read."
+            },
+            {
+              "id": "record:V1",
+              "result": "pass",
+              "detail": "Independent record presence read."
+            },
+            {
+              "id": "record:V2",
+              "result": "pass",
+              "detail": "Independent record presence read."
+            }
+          ],
+          "elapsed_seconds": 1.354
+        }
+      },
+      "seconds": 12.84,
+      "within_three_minutes": true,
+      "target_pass": true
+    }
+  ]
+}

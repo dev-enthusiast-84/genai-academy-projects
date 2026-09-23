@@ -1,0 +1,26 @@
+{
+  "documents": {
+    "name": "Club Portal",
+    "color": "#984b32",
+    "icon": "icon-club.svg",
+    "role": "Membership & interests"
+  },
+  "search": {
+    "name": "Class Booking",
+    "color": "#215446",
+    "icon": "icon-booking.svg",
+    "role": "Bookings & recommendations"
+  },
+  "personalization": {
+    "name": "Member Offers",
+    "color": "#69445e",
+    "icon": "icon-offers.svg",
+    "role": "Personalized invitations"
+  },
+  "recall": {
+    "name": "Recall",
+    "color": "#85651f",
+    "icon": "icon-recall.svg",
+    "role": "Consent & verification"
+  }
+}

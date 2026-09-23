@@ -44,7 +44,7 @@ def settings(path='.env', provider=None):
     defaults = {'investigator': 'openai/gpt-5.4-mini', 'scope_reviewer': 'anthropic/claude-sonnet-4.6',
                 'judge': 'anthropic/claude-sonnet-4.6', 'auditor': 'anthropic/claude-sonnet-4.6'}
     models = {role: values.get('LLM_' + role.upper() + '_MODEL') or values.get('LLM_MODEL') or
-              (default if provider == 'openrouter' else '') for role, default in defaults.items()}
+              default for role, default in defaults.items()}
     return {'models': models, 'provider': provider, 'base_url': values.get('LLM_BASE_URL') or
             'https://openrouter.ai/api/v1',
             'api_key': values.get('LLM_API_KEY') or values.get('OPENROUTER_API_KEY', ''),

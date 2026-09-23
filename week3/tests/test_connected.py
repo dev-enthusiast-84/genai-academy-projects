@@ -70,7 +70,7 @@ def test_refresh_reports_latest_saved_state(connected, service):
         assert 'id="refresh-status" role="status"' in response.text
         assert 'Refreshed at ' in response.text
         assert 'Showing the latest saved information' in response.text
-        assert '/?q=yoga&amp;refresh=1#refresh-status' in response.text
+        assert '/?q=yoga&amp;refresh=1&amp;refresh_id=' in response.text
         assert response.headers['Cache-Control'] == 'no-store'
         plan = deterministic_rehearsal(engine, 'U1')['plan']
         engine.approve(plan['id'], 'U1')
@@ -78,6 +78,80 @@ def test_refresh_reports_latest_saved_state(connected, service):
         refreshed = client.get(services.urls[service], params={'refresh': '1'})
         assert 'No shared personalization records are stored here.' in refreshed.text
         assert 'Refreshed at ' in refreshed.text
+
+
+@pytest.mark.parametrize('service,title', [
+    ('search', 'Recommended for you: evening yoga'),
+    ('personalization', 'Your evening yoga invitation'),
+])
+def test_repeated_refresh_fetches_changes_in_browser(connected, service, title):
+    browser_api = pytest.importorskip('playwright.sync_api')
+    engine, services, stores = connected
+    with browser_api.sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.goto(services.urls[service])
+            assert_identity_images_loaded(page)
+            refresh = page.get_by_role('link', name='Refresh this app', exact=True)
+            refresh.click()
+            browser_api.expect(page.get_by_role('heading', name=title, exact=True)).to_have_count(0)
+            previous_url = page.url
+            engine.grant_fitness_consent('U1')
+            refresh.click()
+            browser_api.expect(page.get_by_role('heading', name=title, exact=True)).to_be_visible()
+            assert page.url != previous_url
+            stores['documents'].delete_visible_profile()
+            refresh.click()
+            browser_api.expect(page.get_by_role('heading', name=title, exact=True)).to_be_visible()
+            plan = deterministic_rehearsal(engine, 'U1')['plan']
+            engine.approve(plan['id'], 'U1')
+            engine.delete_approved_records(plan['id'], 'U1')
+            refresh.click()
+            browser_api.expect(page.get_by_role('heading', name=title, exact=True)).to_have_count(0)
+            if service == 'search':
+                browser_api.expect(page.get_by_role('heading', name='Your confirmed Saturday strength class', exact=True)).to_be_visible()
+        finally:
+            browser.close()
+
+
+def test_club_refresh_fetches_external_consent_changes(connected, monkeypatch):
+    browser_api = pytest.importorskip('playwright.sync_api')
+    engine, services, stores = connected
+    monkeypatch.setenv('RECALL_DATA_DIR', str(engine.directory))
+    monkeypatch.setenv('RECALL_SERVICE_URLS', json.dumps(services.urls))
+    monkeypatch.setenv('RECALL_SERVICE_TOKEN', 'test-token')
+    with browser_api.sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.goto(services.urls['documents'])
+            assert_identity_images_loaded(page)
+            refresh = page.get_by_role('link', name='Refresh', exact=True)
+            refresh.click()
+            engine.grant_fitness_consent('U1')
+            refresh.click()
+            browser_api.expect(page.get_by_role('heading', name='Sharing consent active', exact=True)).to_be_visible()
+            stores['documents'].delete_visible_profile()
+            refresh.click()
+            browser_api.expect(page.get_by_role('heading', name='Questionnaire removed · consent still active', exact=True)).to_be_visible()
+            plan = deterministic_rehearsal(engine, 'U1')['plan']
+            engine.approve(plan['id'], 'U1')
+            engine.delete_approved_records(plan['id'], 'U1')
+            refresh.click()
+            browser_api.expect(page.get_by_role('heading', name='Sharing consent withdrawn', exact=True)).to_be_visible()
+        finally:
+            browser.close()
+
+
+def assert_identity_images_loaded(page):
+    # An <img> can be visible while CSP blocks its content; check decoded pixels.
+    assert page.locator('.persona-avatar').count() == 1
+    assert page.locator('.recall-app-icon img').count() == 3
+    page.wait_for_function("""() => {
+        const images = [...document.querySelectorAll('.persona-avatar, .recall-app-icon img')];
+        return images.length === 4 && images.every(img => img.complete && img.naturalWidth > 0);
+    }""")
 
 
 def test_http_boundaries_and_durable_block(connected):
@@ -189,6 +263,11 @@ def test_current_dashboard_workflow_remains_functional(connected, monkeypatch):
     next(b for b in app.button if b.label == 'Prepare scripted sample plan').click().run(timeout=20)
     assert not app.exception
     assert engine.latest('U1')['status'] == 'awaiting_approval'
+    scope = next(table.value for table in app.table if 'Information in scope' in table.value.columns)
+    questionnaire = scope[scope['Information in scope'] == 'Fitness interests questionnaire'].iloc[0]
+    assert questionnaire['Current state'] == 'Already absent'
+    assert questionnaire['Action after approval'] == 'Recheck absence and block re-import'
+    assert (scope['Current state'] == 'Still stored').sum() == 6
     assert services.read('personalization', 'Q1', 'U1') is not None
     next(c for c in app.checkbox if c.label.startswith('I approve these')).check().run()
     next(b for b in app.button if b.label == 'Approve & withdraw').click().run(timeout=20)
@@ -203,6 +282,16 @@ def test_current_dashboard_workflow_remains_functional(connected, monkeypatch):
     next(b for b in app.button if b.label == 'Replay an old search-index job').click().run(timeout=20)
     assert not app.exception
     assert services.read('search', 'V1', 'U1') is None
+
+    # Reset feedback survives the forced rerun and describes the fresh state.
+    next(c for c in app.checkbox if c.label == 'Reset all local synthetic data and request history').check().run()
+    next(b for b in app.button if b.label == 'Reset demo').click().run(timeout=20)
+    assert not app.exception
+    assert any('Demo reset complete' in message.value for message in app.success)
+    assert any('Give consent in Club Portal' in message.value for message in app.info)
+    assert engine.latest('U1') is None
+    assert engine.consent_status('U1')['state'] == 'not_granted'
+    assert services.read('search', 'B1', 'U1') is not None
 
 
 def test_customer_actions_visible_in_browser(connected, monkeypatch):

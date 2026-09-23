@@ -1,7 +1,8 @@
 # Environment & Secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+.streamlit/secrets.toml
 
 # Python
 __pycache__/
@@ -9,6 +10,8 @@ __pycache__/
 *$py.class
 *.so
 .Python
+.venv/
+venv.bak/
 env/
 venv/
 ENV/
@@ -34,20 +37,41 @@ wheels/
 *.swp
 *.swo
 *~
-.DS_Store
 
 # Runtime & Data
 .runtime/
 *.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
 *.sqlite3
+*.sqlite3-journal
+*.sqlite3-shm
+*.sqlite3-wal
 
 # Logs
 *.log
 
 # Test Coverage
 .coverage
+.coverage.*
+coverage.xml
+coverage.json
 .pytest_cache/
 htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# Browser tooling and test output
+node_modules/
+playwright-report/
+test-results/
 
 # OS
 .DS_Store
@@ -57,3 +81,5 @@ Thumbs.db
 *.tmp
 *.temp
 /tmp/
+# Office lock files; presentation deliverables remain tracked
+~$*

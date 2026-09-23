@@ -1,5 +1,6 @@
 import {Engine,investigate,providerRequest,USER,STORAGE_KEY} from './engine.mjs';
 const $=id=>document.getElementById(id);
+const appName=service=>({documents:'Club Portal',search:'Class Booking',personalization:'Member Offers'})[service]||service;
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fixture=await fetch('./fitness.json').then(r=>{if(!r.ok)throw new Error('Cannot load sample data.');return r.json();});
 let engine;
@@ -45,7 +46,7 @@ function renderMap(){
     const label=engine.state.consent.state==='not_granted'&&r.consent_root?'NOT SHARED YET':{present:'PRESENT',absent:'VERIFIED ABSENT',unknown:'UNABLE TO VERIFY'}[state];
     const icon=state==='absent'?'✓':state==='unknown'?'?':graph.roots.includes(r.id)?'↳':'◇';
     const title=r.title.length>27?r.title.slice(0,26)+'…':r.title;
-    svg+=`<g class="node ${state}" data-record="${escape(r.id)}" tabindex="0" role="button" aria-label="Inspect ${escape(r.title)}, ${label}" transform="translate(${p.x},${p.y})"><rect class="card" width="232" height="87" rx="11"/><rect class="icon-bg" x="13" y="14" width="25" height="25" rx="7"/><text class="icon" x="25.5" y="31" text-anchor="middle">${icon}</text><text class="id" x="49" y="25">${escape(r.id)} · ${escape(({documents:'CLUB PORTAL',search:'CLASS BOOKING',personalization:'MEMBER OFFERS'})[r.service])}</text><text class="name" x="13" y="54">${escape(title)}</text><text class="status" x="13" y="73">${label}</text></g>`;
+    svg+=`<g class="node ${state}" data-record="${escape(r.id)}" tabindex="0" role="button" aria-label="Inspect ${escape(r.title)}, ${label}" transform="translate(${p.x},${p.y})"><rect class="card" width="232" height="87" rx="11"/><rect class="icon-bg" x="13" y="14" width="25" height="25" rx="7"/><text class="icon" x="25.5" y="31" text-anchor="middle">${icon}</text><text class="id" x="49" y="25">${escape(({documents:'CLUB PORTAL',search:'CLASS BOOKING',personalization:'MEMBER OFFERS'})[r.service])}</text><text class="name" x="13" y="54">${escape(title)}</text><text class="status" x="13" y="73">${label}</text></g>`;
   }
   $('data-map').innerHTML=svg;$('map-count').textContent=`${records.length} linked records`;
   if(selection){
@@ -65,7 +66,7 @@ function renderReceipt(){
   $('receipt').innerHTML=`<div class="status-tag ${r.status==='complete'?'complete':''}">${escape(status)}</div><div class="tally">${count}<small> / ${r.targets.length}</small></div><p>records independently verified absent</p>${r.origin!=='live_agent'?'<span class="status-tag rehearsal">SCRIPTED REHEARSAL</span>':''}`;
   let controls='';
   if(r.status==='awaiting_approval'){
-    controls=`<div class="target-list">${r.targets.map(t=>`<div class="target-row"><strong>${escape(t.id)} · v${t.version}</strong><span>${escape(t.service)}</span></div>`).join('')}</div><p class="fineprint">Withdraw sharing consent, delete these records, and block re-ingestion. Up to two retries. Deletion cannot be undone.</p><label class="consent"><input id="consent" type="checkbox">I approve these removals and ingestion blocks.</label><button id="approve" class="primary full" disabled>Approve & withdraw →</button>`;
+    controls=`<div class="target-list">${r.targets.map(t=>`<div class="target-row"><strong>${escape(t.title)}</strong><span>${escape(appName(t.service))}</span></div>`).join('')}</div><details><summary>Technical record references</summary>${r.targets.map(t=>`<p>${escape(t.title)} → ${escape(t.id)} · ${escape(t.service)} · version ${t.version}</p>`).join('')}</details><p class="fineprint">Withdraw sharing consent, delete these records, and block re-ingestion. Up to two retries. Deletion cannot be undone.</p><label class="consent"><input id="consent" type="checkbox">I approve these removals and ingestion blocks.</label><button id="approve" class="primary full" disabled>Approve & withdraw →</button>`;
     if(needsClarification)controls='<p class="fineprint">Resolve your latest question before approving. This is an earlier preview.</p>';
   }else if(['partial','interrupted','approved','executing'].includes(r.status)){
     const exhausted=r.targets.some(t=>t.attempts>=3&&t.verification!=='absent');
@@ -79,7 +80,7 @@ function renderProof(){
   const hits=engine.search($('search').value);
   $('search-count').textContent=`${hits.length} matches`;
   const offline=engine.state.fault?.mode==='offline';
-  $('search-results').innerHTML=(offline?'<span>Offline service excluded. Check the receipt for unknowns.</span>':'')+(hits.length?`<details><summary>Inspect matching records</summary><ul>${hits.map(r=>`<li><strong>${escape(r.id)}</strong> · ${escape(r.content)}</li>`).join('')}</ul></details>`:'<span>No accessible matching records.</span>');
+  $('search-results').innerHTML=(offline?'<span>Offline service excluded. Check the receipt for unknowns.</span>':'')+(hits.length?`<details><summary>Inspect matching records</summary><ul>${hits.map(r=>`<li><strong>${escape(r.title)}</strong> · ${escape(appName(r.service))} · ${escape(r.content)}</li>`).join('')}</ul></details>`:'<span>No accessible matching records.</span>');
   $('replay').disabled=busy||engine.state.request?.status!=='complete';
   $('preserved').innerHTML=['B1','D2'].map(id=>{const r=engine.inspect(id);return `<div class="preserved-row"><span>${escape(r.title)}</span><span>${r.state==='present'?'UNCHANGED':escape(r.state.toUpperCase())}</span></div>`;}).join('');
 }
@@ -114,7 +115,7 @@ $('investigate').onclick=()=>{
   if(engine.state.consent.state==='not_granted'){notice('Start in Club Portal: give consent and watch the connected apps personalize.','error');return;}
   if(!ready()){$('settings-dialog').showModal();return;}
   if(!$('request').value.trim()){notice('Describe the source you want withdrawn.','error');return;}
-  action(async()=>{liveTrace=[];notice('The agent is tracing your data…');
+  action(async()=>{needsClarification=true;liveTrace=[];notice('The agent is tracing your data…');
     const request=$('request').value;
     const result=await investigate(engine,config,request,history,entry=>{liveTrace.push(entry);renderEvidence();notice(`Investigating · ${entry.tool.replaceAll('_',' ')}`);});
     needsClarification=result.action==='clarify';history.push({role:'user',content:request},{role:'assistant',content:result.message});
