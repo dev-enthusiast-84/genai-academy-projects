@@ -10,6 +10,7 @@ ASSETS = (
     'customer.mjs', 'customer.css', 'scenario.html', 'scenario.mjs',
     'identity.json', 'identity.css', 'avatar-avery.svg', 'icon-club.svg',
     'icon-booking.svg', 'icon-offers.svg', 'icon-recall.svg',
+    'recall-pitch.html',
 )
 
 
